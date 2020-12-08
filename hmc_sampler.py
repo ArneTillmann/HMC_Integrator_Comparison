@@ -15,6 +15,7 @@ class HMC:
         self.gradient_log_prob = gradient_log_prob
 
 
+
     def build_chain(self):
         n_accepted = 0
         chain = [self.x_0]
