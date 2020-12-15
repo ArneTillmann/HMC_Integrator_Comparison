@@ -1,7 +1,7 @@
 import numpy as np
 
 def k_th_batch_mean(k, b, chains):
-    return (1.0/b) * chains[int((k-1)*b+1):int(k*b)].sum(axis=0)
+    return (1.0/b) * chains[int((k-1)*b+1):int(k*b),:].sum(axis=0)
 
 def combined_estimator_of_mu(m, chains):
     return 1.0/m * (chains.mean(axis=1)).sum(axis=0)

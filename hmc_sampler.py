@@ -19,13 +19,19 @@ class HMC:
     def build_chain(self):
         n_accepted = 0
         chain = [self.x_0]
+
         for i in range(self.chain_length):
-            state, accept = self.sample(copy.copy(chain[-1]))
-            chain.append(state)
+            state, accept = self.sample(chain[len(chain)-1])
+            state = np.array(state)
+            chain = np.append(chain, [state], axis = 0)
             n_accepted += accept
 
-        acceptance_rate= n_accepted/float(self.chain_length)
-        return chain, acceptance_rate
+        self.acceptance_rate= n_accepted/float(self.chain_length)
+
+        return chain
+
+    def get_acceptance_rate(self):
+        return self.acceptance_rate
 
     def log_p_acc(self, x_old, v_old, x_new, v_new):
         def H(x,v): return -self.log_prob(x) + 0.5*np.sum(v**2)
