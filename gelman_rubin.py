@@ -1,4 +1,4 @@
-<<<<<<< HEAD
+
 import numpy as np
 
 def k_th_batch_mean(k, b, chains):
@@ -37,6 +37,4 @@ def average_of_the_m_sample_variances(m, n, chains):
     for i in range(m):
         x += np.cov(chains[i].T, ddof=1)
     return 1./m*x
-=======
-gelman rubin
->>>>>>> 46d512f03d74f2edd621b2d10641e22a6245000b
+
