@@ -25,5 +25,5 @@ chain, acceptance_rate = leapfrog_HMC.build_chain()
 print(chain[:10])
 
 u7_HMC = U7HMC(x_0, chain_length, log_prob, gradient_log_prob, hessian_log_prog, stepsize, trajectory_length)
-chain2, acceptance_rate2 = u7_HMC.build_chain()
+chain2,  acceptance_rate2 = u7_HMC.build_chain()
 print(chain2[:10])

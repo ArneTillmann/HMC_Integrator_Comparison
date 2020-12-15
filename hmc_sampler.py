@@ -75,4 +75,4 @@ class LeapfrogHMC (HMC):
             v = v + self.stepsize*self.gradient_log_prob(x)
         x += self.stepsize * v
         v += 0.5 * self.stepsize * self.gradient_log_prob(x)
-        return x, v
+        return  x, v

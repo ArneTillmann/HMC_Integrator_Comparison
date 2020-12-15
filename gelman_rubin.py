@@ -1,1 +1,1 @@
-gelman rubin
+gelman rubin..
