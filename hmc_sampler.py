@@ -16,7 +16,7 @@ class HMC:
         trajectory length for the integrator simulating the Hamiltonian dynamics
 
         IMPORTANT!!!
-        I am using the gradient of the density function and not
+        I am using the gradient of the log-density function and not
         the gradient of the energy potential, which is usually used
         in Hamiltonien methods (just a matter of sign)        
         """
