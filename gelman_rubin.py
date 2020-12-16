@@ -45,13 +45,16 @@ def replicated_lugsail_batch_mean_sestimator(b, a, m, p, chains):
 
 
 def improved_estimator_PSRF(b, a, m, n, p, chains):
-    """The final revised gelman-rubin statistic receiving b,a as additional
+    """The final revised Gelman-Rubin statistic receiving b, a as additional
     parameters for the calculation of the k_th_batch_mean.
-    They are chosen in the way, that n=a*b, whereas n is the chain length
-    (number of samples in one chain). Usual choices for b include round off
-    n^(1/2) or round off n^(1/3) according to the authers.
-    m is the number of chains, n their length, p the dimension of the target
-    distribution and chains the np.ndarray containing the chains in order [m,n,p]
+    They are chosen in the way, that n=a*b. Usual choices for b include round off
+    n^(1/2) or round off n^(1/3) according to the authors.
+    
+    Arguments:
+    - m (int): number of chains
+    - n (int): length of each chain
+    - p (int): dimension of the target distribution 
+    - chains (numpy.ndarray): array containing the chains in order [m,n,p]
     """
 
     t_hat = replicated_lugsail_batch_mean_sestimator(b, a, m, p, chains)
