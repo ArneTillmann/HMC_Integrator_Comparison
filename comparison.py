@@ -45,8 +45,8 @@ Leapfrog_HMCs = [LeapfrogHMC(log_prob, gradient_log_prob, stepsize,
                              for i in range(number_of_chains)]
 chainleapfrog_HMCs = []
 
-for i in range(number_of_chains):
-    chain, acceptance_rate = Leapfrog_HMCs[i].build_chain(x_0, chain_length)
+for sampler in Leapfrog_HMCs:
+    chain, acceptance_rate = sampler.build_chain(x_0, chain_length)
     chainleapfrog_HMCs.append(chain)
 
 chainleapfrog_HMCs = np.array(chainleapfrog_HMCs)
