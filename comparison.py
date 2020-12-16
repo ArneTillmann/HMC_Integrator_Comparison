@@ -30,7 +30,7 @@ def hessian_log_prog(x):
 
 """creating the chains for the different integrators respectively"""
 u7_HMCs = [U7HMC(log_prob, gradient_log_prob, hessian_log_prog,
-                 stepsize, trajectory_length) for i in range(number_of_chains)]
+                 stepsize, trajectory_length) for _ in range(number_of_chains)]
 chainu7_HMCs = []
 
 for i in range(number_of_chains):
