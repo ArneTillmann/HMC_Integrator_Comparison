@@ -3,8 +3,6 @@ import math
 import matplotlib.pyplot as plt
 import copy
 
-np.random.seed(42)
-
 
 class HMC:
 

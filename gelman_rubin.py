@@ -49,20 +49,20 @@ def improved_estimator_PSRF(b, a, m, n, p, chains):
     parameters for the calculation of the k_th_batch_mean.
     They are chosen in the way, that n=a*b. Usual choices for b include round off
     n^(1/2) or round off n^(1/3) according to the authors.
-    
+
     Arguments:
     - m (int): number of chains
     - n (int): length of each chain
-    - p (int): dimension of the target distribution 
+    - p (int): dimension of the target distribution
     - chains (numpy.ndarray): array containing the chains in order [m,n,p]
     """
 
     t_hat = replicated_lugsail_batch_mean_sestimator(b, a, m, p, chains)
     sigma_hat = average_of_the_m_sample_covariances(m, n, p, chains)
 
-    return (((n-1.)/n
+    return (np.sqrt((n-1.)/n
            + (np.linalg.det(t_hat)
-           / np.linalg.det(sigma_hat))**(1./p)/n)**(1.0/2))
+           / np.linalg.det(sigma_hat)) ** (1. / p) / n))
 
 
 def average_of_the_m_sample_covariances(m, n, p, chains):
