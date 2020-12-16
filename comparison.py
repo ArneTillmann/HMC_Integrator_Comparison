@@ -15,7 +15,7 @@ x_0 = np.zeros(dimension)   #may be chosen randomly for different chains
 
 def log_prob(x):
 
-    return -1./2 * np.sum(x**2)
+    return -0.5 * np.sum(x**2)
 
 
 def gradient_log_prob(x):
