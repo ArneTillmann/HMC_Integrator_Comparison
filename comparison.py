@@ -55,8 +55,8 @@ chainleapfrog_HMCs = np.array(chainleapfrog_HMCs)
 """Evaluation of the inte by using the revised Gelman-Rubin Diagnostic
 see https://arxiv.org/pdf/1812.09384.pdf for further notice
 """
-b = int(np.floor(chain_length**(1.0/3)))
-a = int(np.floor(chain_length/b))
+b = int(np.floor(chain_length ** (1.0 / 3)))
+a = int(np.floor(chain_length / b))
 
 print(gelman_rubin.improved_estimator_PSRF(b, a, number_of_chains, chain_length,
                                            dimension, chainu7_HMCs))
