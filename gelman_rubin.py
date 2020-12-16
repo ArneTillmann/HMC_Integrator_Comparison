@@ -1,9 +1,9 @@
-import numpy as np
 """This is the implementation of the revised Gelman-Rubin Diagnostic
 with use of the presented calculations given in the paper
 https://arxiv.org/pdf/1812.09384.pdf
 written by Dootika Vats and Christina Knudson
 """
+import numpy as np
 
 def k_th_batch_mean(k, b, chains):
     """calculation of a special mean for each chain respectively"""
