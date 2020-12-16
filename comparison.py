@@ -8,34 +8,36 @@ number_of_chains = 2
 chain_length = 5000
 stepsize = 1.5
 trajectory_length = 10
-dimension = 2
+dimension = 15
 
 x_0 = np.zeros(dimension)   #may be chosen randomly for different chains
-
+mu = np.random.normal(size=dimension)
 
 def log_prob(x):
 
-    return -0.5 * np.sum(x**2)
+    return -0.5 * np.sum((x-mu)**2)
 
 
 def gradient_log_prob(x):
 
-    return -x
+    return -(x-mu)
 
 
 def hessian_log_prog(x):
 
-    return -np.identity(2)
+    return -np.identity(dimension)
 
 
 """creating the chains for the different integrators respectively"""
 u7_HMCs = [U7HMC(log_prob, gradient_log_prob, hessian_log_prog,
                  stepsize, trajectory_length) for _ in range(number_of_chains)]
 chainu7_HMCs = []
+acceptance_rate_list_u7 = []
 
 for sampler in u7_HMCs:
     chain, acceptance_rate = sampler.build_chain(x_0, chain_length)
     chainu7_HMCs.append(chain)
+    acceptance_rate_list_u7.append(acceptance_rate)
 
 chainu7_HMCs = np.array(chainu7_HMCs)
 
@@ -44,10 +46,12 @@ Leapfrog_HMCs = [LeapfrogHMC(log_prob, gradient_log_prob, stepsize,
                              trajectory_length)
                              for i in range(number_of_chains)]
 chainleapfrog_HMCs = []
+acceptance_rate_list_Leapfrog = []
 
 for sampler in Leapfrog_HMCs:
     chain, acceptance_rate = sampler.build_chain(x_0, chain_length)
     chainleapfrog_HMCs.append(chain)
+    acceptance_rate_list_Leapfrog.append(acceptance_rate)
 
 chainleapfrog_HMCs = np.array(chainleapfrog_HMCs)
 
@@ -62,3 +66,5 @@ print(gelman_rubin.improved_estimator_PSRF(b, a, number_of_chains, chain_length,
                                            dimension, chainu7_HMCs))
 print(gelman_rubin.improved_estimator_PSRF(b, a, number_of_chains, chain_length,
                                            dimension, chainleapfrog_HMCs))
+print(acceptance_rate_list_u7)
+print(acceptance_rate_list_Leapfrog)
