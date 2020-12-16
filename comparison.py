@@ -20,21 +20,21 @@ def log_prob(x):
 
 def gradient_log_prob(x):
 
-    return -1 * x
+    return -x
 
 
 def hessian_log_prog(x):
 
-    return -1 * np.identity(2)
+    return -np.identity(2)
 
 
 """creating the chains for the different integrators respectively"""
 u7_HMCs = [U7HMC(log_prob, gradient_log_prob, hessian_log_prog,
-                 stepsize, trajectory_length) for i in range(number_of_chains)]
+                 stepsize, trajectory_length) for _ in range(number_of_chains)]
 chainu7_HMCs = []
 
-for i in range(number_of_chains):
-    chain, acceptance_rate = u7_HMCs[i].build_chain(x_0, chain_length)
+for sampler in u7_HMCs:
+    chain, acceptance_rate = sampler.build_chain(x_0, chain_length)
     chainu7_HMCs.append(chain)
 
 chainu7_HMCs = np.array(chainu7_HMCs)
@@ -45,8 +45,8 @@ Leapfrog_HMCs = [LeapfrogHMC(log_prob, gradient_log_prob, stepsize,
                              for i in range(number_of_chains)]
 chainleapfrog_HMCs = []
 
-for i in range(number_of_chains):
-    chain, acceptance_rate = Leapfrog_HMCs[i].build_chain(x_0, chain_length)
+for sampler in Leapfrog_HMCs:
+    chain, acceptance_rate = sampler.build_chain(x_0, chain_length)
     chainleapfrog_HMCs.append(chain)
 
 chainleapfrog_HMCs = np.array(chainleapfrog_HMCs)
@@ -55,8 +55,8 @@ chainleapfrog_HMCs = np.array(chainleapfrog_HMCs)
 """Evaluation of the inte by using the revised Gelman-Rubin Diagnostic
 see https://arxiv.org/pdf/1812.09384.pdf for further notice
 """
-b = int(np.floor(chain_length**(1.0/3)))
-a = int(np.floor(chain_length/b))
+b = int(np.floor(chain_length ** (1.0 / 3)))
+a = int(np.floor(chain_length / b))
 
 print(gelman_rubin.improved_estimator_PSRF(b, a, number_of_chains, chain_length,
                                            dimension, chainu7_HMCs))
