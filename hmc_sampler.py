@@ -18,7 +18,13 @@ class HMC:
         IMPORTANT!!!
         I am using the gradient of the log-density function and not
         the gradient of the energy potential, which is usually used
-        in Hamiltonien methods (just a matter of sign)        
+        in Hamiltonien methods (just a matter of sign)
+
+        Arguments:
+        - log_prob (algebraic function R^n -> R)
+        - gradient_log_prob (algebraic function R^n -> R^n)
+        - stepsize (float)
+        - trajectory_length (int)
         """
 
         self.stepsize = stepsize
@@ -79,6 +85,13 @@ class U7HMC(HMC):
         https://arxiv.org/pdf/2007.05308.pdf and is just simply called u7.
         As it is a fourth order intgrator it requires the hessian matrix of the
         targeted log density as well.
+
+        Arguments:
+        - log_prob (algebraic function R^n -> R)
+        - gradient_log_prob (algebraic function R^n -> R^n)
+        - hessian_log_prog (algebraic function R^n -> R^(n x n))
+        - stepsize (float)
+        - trajectory_length (int)
         """
 
         super().__init__(log_prob, gradient_log_prob,
@@ -117,7 +130,8 @@ class LeapfrogHMC(HMC):
 
     def integrate(self, x, v):
         """The second integrator to which we compare the new u7 is the classical
-        Leapfrog."""
+        Leapfrog.
+        """
 
         v += 1./2 * self.stepsize * self.gradient_log_prob(x)
 
