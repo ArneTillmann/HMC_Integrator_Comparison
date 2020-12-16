@@ -25,7 +25,7 @@ def gradient_log_prob(x):
 
 def hessian_log_prog(x):
 
-    return -1 * np.identity(2)
+    return -np.identity(2)
 
 
 """creating the chains for the different integrators respectively"""
