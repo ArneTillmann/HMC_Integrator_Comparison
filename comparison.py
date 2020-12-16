@@ -33,8 +33,8 @@ u7_HMCs = [U7HMC(log_prob, gradient_log_prob, hessian_log_prog,
                  stepsize, trajectory_length) for _ in range(number_of_chains)]
 chainu7_HMCs = []
 
-for i in range(number_of_chains):
-    chain, acceptance_rate = u7_HMCs[i].build_chain(x_0, chain_length)
+for sampler in u7_HMCs:
+    chain, acceptance_rate = sampler.build_chain(x_0, chain_length)
     chainu7_HMCs.append(chain)
 
 chainu7_HMCs = np.array(chainu7_HMCs)
