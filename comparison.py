@@ -20,7 +20,7 @@ def log_prob(x):
 
 def gradient_log_prob(x):
 
-    return -1 * x
+    return -x
 
 
 def hessian_log_prog(x):
