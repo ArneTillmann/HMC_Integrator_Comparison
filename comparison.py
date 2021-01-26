@@ -3,17 +3,18 @@ from hmc_sampler import LeapfrogHMC
 from hmc_sampler import U7HMC
 import gelman_rubin
 
-number_of_chains = 2
-chain_length = 5000
+number_of_chains = 25
+chain_length = 500
 stepsize = 1.5
 trajectory_length = 10
-dimension = 15
+dimension = 2
 
 x_0 = np.zeros(dimension)   #may be chosen randomly for different chains
 mu = np.random.normal(size=dimension)
 A = np.random.rand(dimension, dimension)
 cov = np.dot(A, A.transpose())
 inv_cov = np.linalg.inv(cov)
+print(cov)
 def log_prob(x):
 
     return -0.5 * np.sum((x-mu)@inv_cov@(x-mu))
