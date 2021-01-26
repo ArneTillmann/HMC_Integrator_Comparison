@@ -1,3 +1,4 @@
+number_of_chains = 25
 chain_length = 500
 stepsize_u7 = 1.275
 stepsize_leapfrog = 0.715
