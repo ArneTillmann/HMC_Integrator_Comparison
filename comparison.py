@@ -3,7 +3,6 @@ from hmc_sampler import LeapfrogHMC
 from hmc_sampler import U7HMC
 import gelman_rubin
 
-
 number_of_chains = 2
 chain_length = 5000
 stepsize = 1.5
@@ -12,20 +11,22 @@ dimension = 15
 
 x_0 = np.zeros(dimension)   #may be chosen randomly for different chains
 mu = np.random.normal(size=dimension)
-
+A = np.random.rand(dimension, dimension)
+cov = np.dot(A, A.transpose())
+inv_cov = np.linalg.inv(cov)
 def log_prob(x):
 
-    return -0.5 * np.sum((x-mu)**2)
+    return -0.5 * np.sum((x-mu)@inv_cov@(x-mu))
 
 
 def gradient_log_prob(x):
 
-    return -(x-mu)
+    return -inv_cov@(x-mu)
 
 
 def hessian_log_prog(x):
 
-    return -np.identity(dimension)
+    return -inv_cov
 
 
 """creating the chains for the different integrators respectively"""
