@@ -3,19 +3,25 @@ from hmc_sampler import LeapfrogHMC
 from hmc_sampler import U7HMC
 import gelman_rubin
 
-number_of_chains = 25
-chain_length = 500
-stepsize_u7 = 0.487
-stepsize_leapfrog = 0.3
-trajectory_length_u7 = 10
-trajectory_length_leapfrog = 10
-dimension = 10
+number_of_chains = 5
+chain_length = 5000
+# stepsize_u7 = 0.5
+# stepsize_leapfrog = 0.3
 
-x_0 = np.zeros(dimension)   #may be chosen randomly for different chains
+stepsize_u7 = 20.0 / 12
+trajectory_length_u7 = 12
+
+stepsize_leapfrog = 1.0
+trajectory_length_leapfrog = 20
+
+dimension = 100
+
+x_0 = np.random.uniform(low=-5, high=5, size=dimension)
+# x_0 = np.zeros(dimension)   #may be chosen randomly for different chains
 mu = np.random.normal(size=dimension)
-A = np.random.rand(dimension, dimension)
-cov = np.dot(A, A.transpose())
-inv_cov = np.linalg.inv(cov)
+# A = np.random.rand(dimension, dimension)
+# cov = np.dot(A, A.transpose())
+# inv_cov = np.linalg.inv(cov)
 inv_cov = np.array([[ 1.84984923e+01, -1.21639515e+01,  1.47480361e+00, -7.86359700e+00,
    2.98541181e+00, -8.00269519e+00,  3.80178183e+00, -2.02577223e+00,
   -4.55767762e+00, -1.82009378e+00],
@@ -46,6 +52,9 @@ inv_cov = np.array([[ 1.84984923e+01, -1.21639515e+01,  1.47480361e+00, -7.86359
  [-1.82009378e+00,  1.44878664e+00, -2.72634719e+00,  1.43560595e+00,
   -1.51410822e+00,  2.01324342e+00, -1.75615177e+00, -2.93000619e-01,
    1.60886584e+00,  3.05125845e+00]])
+
+inv_cov = np.eye(dimension) * 0.75
+
 def log_prob(x):
 
     return (-0.5 * (x-mu)@inv_cov@(x-mu))
@@ -95,9 +104,9 @@ see https://arxiv.org/pdf/1812.09384.pdf for further notice
 b = int(np.floor(chain_length ** (1.0 / 3)))
 a = int(np.floor(chain_length / b))
 
-print(gelman_rubin.improved_estimator_PSRF(b, a, number_of_chains, chain_length,
+print("GR U7", gelman_rubin.improved_estimator_PSRF(b, a, number_of_chains, chain_length,
                                            dimension, chainu7_HMCs))
-print(gelman_rubin.improved_estimator_PSRF(b, a, number_of_chains, chain_length,
+print("GR LF", gelman_rubin.improved_estimator_PSRF(b, a, number_of_chains, chain_length,
                                            dimension, chainleapfrog_HMCs))
 print(acceptance_rate_list_u7)
 print(acceptance_rate_list_Leapfrog)
