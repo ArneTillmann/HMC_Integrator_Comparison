@@ -9,7 +9,7 @@ import gelman_rubin
 
 
 # number_of_chains = 5
-chain_length = 500
+chain_length = 5000
 # stepsize_u7 = 0.5
 # stepsize_leapfrog = 0.3
 dimension = 100
