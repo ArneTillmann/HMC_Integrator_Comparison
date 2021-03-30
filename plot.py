@@ -6,9 +6,9 @@ import numpy as np
 from hmc_sampler import LeapfrogHMC
 from hmc_sampler import U7HMC
 import gelman_rubin
-from rpy2.robjects.packages import importr
-import rpy2.robjects as robjects
-from rpy2.robjects import numpy2ri
+#from rpy2.robjects.packages import importr
+#import rpy2.robjects as robjects
+#from rpy2.robjects import numpy2ri
 from sklearn.linear_model import LinearRegression
 
 
@@ -132,14 +132,14 @@ Z4_pred = linear_regressor2.predict(stepsize[2:].reshape(-1, 1))
 
 plot1 = plt.figure(1)
 plt.tick_params(axis='both', labelsize=15)
-plt.plot(stepsize[2:], Z3[2:], 's', label='Leapfrog')
-plt.plot(stepsize[2:], Z4[2:], '^', label='U7')
-plt.plot(stepsize[2:], Z3_pred, '--', color='#1f77b4')
-plt.plot(stepsize[2:], Z4_pred, '--', color='#ff7f0e')
+plt.plot(stepsize[1:], Z3[1:], 's--', label='Leapfrog')
+plt.plot(stepsize[1:], Z4[1:], '^--', label='U7')
+#plt.plot(stepsize[2:], Z3_pred, '--', color='#1f77b4')
+#plt.plot(stepsize[2:], Z4_pred, '--', color='#ff7f0e')
 
 plt.xlabel('stepsize = time / trajectory length, time = 10', fontsize=f)
 plt.ylabel('acceptance rate', fontsize=f)
-plt.title('acceptance rate for normal distribution, n='+str(chain_length), fontsize=f2)
+plt.title('normal distribution', fontsize=f2)
 plt.legend(fontsize=f)
 # plot2 = plt.figure(2)
 # plt.tick_params(axis='both', labelsize=15)
