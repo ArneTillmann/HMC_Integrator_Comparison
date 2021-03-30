@@ -44,9 +44,17 @@ print(hessian_log_posterior(x))
 
 chain_length = 500
 time = 10
-trajectory_length = np.arange(1, 50, 3)
-stepsize = time/trajectory_length
+#trajectory_length = np.arange(1, 50, 3)
+#stepsize = time/trajectory_length
+trajectory_length = 10 
+stepsize = 0.1
 
 x_0 = np.random.uniform(low=-5, high=5, size=number_of_monomere*dimension)
 b = int(np.floor(chain_length ** (1.0 / 3)))
 a = int(np.floor(chain_length / b))
+
+leapfrog = LeapfrogHMC(log_posterior, gradient_log_posterior, stepsize, trajectory_length)
+chain , acceptancerate = leapfrog.build_chain(x, 10)
+
+u7 = U7HMC(log_posterior, gradient_log_posterior, hessian_log_posterior, stepsize, trajectory_length)
+chain, acceptancerate = u7.build_chain(x, 10)
