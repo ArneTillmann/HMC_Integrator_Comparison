@@ -12,12 +12,18 @@ sigma_squared=1
 sigma_squared_likelihood=1
 
 def log_prior(x):
+    x = x.reshape(-1, 3)
     return np.sum(-(np.sqrt(np.sum((x[1:]-x[:-1])**2, axis=1))-l)**2/(2*sigma_squared))
 
+pairs = np.array([[0, 2],
+                  [0, 3]])
+distances = np.array([1.0, 1.5])
 
 def log_likelihood(x):
-    mu = np.linalg.norm(x[None,:] - x[:, None], axis=2)
-    return np.sum(-np.triu(np.log(np.triu(D,1)/mu)**2/(2*sigma_squared_likelihood),1))
+    # mu = np.linalg.norm(x[None,:] - x[:, None], axis=2)
+    x = x.reshape(-1, 3)
+    mu = np.linalg.norm(x[pairs[:,0]]-x[pairs[:,1]], axis=1)
+    return np.sum((np.log(distances/mu)**2/(2*sigma_squared_likelihood)))
 
 
 def log_posterior(x):
@@ -28,16 +34,13 @@ hessian_log_posterior = jacobian(gradient_log_posterior)
 
 
 number_of_monomere=4
-D=np.abs(np.random.normal(0,1,(4,4)))
 
 dimension=3
-x=np.abs(np.random.normal(0,1,(4,3)))
-
-mu = np.linalg.norm(x[None,:] - x[:, None], axis=2) + np.eye(number_of_monomere)
+x=np.abs(np.random.normal(0,1,(4,3))).ravel()
 
 print(log_posterior(x))
 print(gradient_log_posterior(x))
-#print(hessian_log_posterior(x))
+print(hessian_log_posterior(x))
 
 chain_length = 500
 time = 10
