@@ -6,10 +6,13 @@ import matplotlib.pyplot as plt
 from hmc_sampler import LeapfrogHMC
 from hmc_sampler import U7HMC
 import gelman_rubin
+from write_pdb import write_ensemble, write_VMD_script
 
 l=3
 sigma_squared=1
 sigma_squared_likelihood=1
+number_of_monomere=10
+dimension=3
 
 def log_prior(x):
     x = x.reshape(-1, 3)
@@ -33,28 +36,34 @@ gradient_log_posterior = grad(log_posterior)
 hessian_log_posterior = jacobian(gradient_log_posterior)
 
 
-number_of_monomere=4
+x_0=np.abs(np.random.normal(0,1,(number_of_monomere,3))).ravel()
 
-dimension=3
-x=np.abs(np.random.normal(0,1,(4,3))).ravel()
+# b = int(np.floor(chain_length ** (1.0 / 3)))
+# a = int(np.floor(chain_length / b))
 
-print(log_posterior(x))
-print(gradient_log_posterior(x))
-print(hessian_log_posterior(x))
 
-chain_length = 500
-time = 10
-#trajectory_length = np.arange(1, 50, 3)
-#stepsize = time/trajectory_length
-trajectory_length = 10 
-stepsize = 0.1
+if __name__ == "__main__":
+    chain_length = 500
+    time = 10
+    trajectory_length = 10
+    stepsize = 0.1
+    leapfrog = LeapfrogHMC(log_posterior, gradient_log_posterior, stepsize, trajectory_length)
+    chain_leapfrog , acceptancerate = leapfrog.build_chain(x, chain_length)
 
-x_0 = np.random.uniform(low=-5, high=5, size=number_of_monomere*dimension)
-b = int(np.floor(chain_length ** (1.0 / 3)))
-a = int(np.floor(chain_length / b))
+    u7 = U7HMC(log_posterior, gradient_log_posterior, hessian_log_posterior, stepsize, trajectory_length)
+    chain_u7, acceptancerate = u7.build_chain(x, chain_length)
 
-leapfrog = LeapfrogHMC(log_posterior, gradient_log_posterior, stepsize, trajectory_length)
-chain , acceptancerate = leapfrog.build_chain(x, 10)
 
-u7 = U7HMC(log_posterior, gradient_log_posterior, hessian_log_posterior, stepsize, trajectory_length)
-chain, acceptancerate = u7.build_chain(x, 10)
+    chain_leapfrog.reshape(chain_length +1, number_of_monomere, dimension)
+    chain_leapfrog = chain_leapfrog[:].reshape(chain_length+1, number_of_monomere, dimension)
+
+    chain_u7.reshape(-1, number_of_monomere, dimension)
+    chain_u7 = chain_u7[:].reshape(chain_length+1, number_of_monomere, dimension)
+
+
+    write_ensemble(chain_leapfrog, "leapfrog_samples.pdb", center=False)
+    write_VMD_script("leapfrog_samples.pdb", l, chain_leapfrog.shape[1], "leapfrog_script.rc")
+
+    print(chain_u7.shape)
+    write_ensemble(chain_u7, "u7_samples.pdb", center=False)
+    write_VMD_script("u7_samples.pdb", l, chain_u7.shape[1], "u7_script.rc")
