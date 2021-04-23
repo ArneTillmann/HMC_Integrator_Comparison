@@ -26,7 +26,7 @@ def log_likelihood(x):
     # mu = np.linalg.norm(x[None,:] - x[:, None], axis=2)
     x = x.reshape(-1, 3)
     mu = np.linalg.norm(x[pairs[:,0]]-x[pairs[:,1]], axis=1)
-    return np.sum((np.log(distances/mu)**2/(2*sigma_squared_likelihood)))
+    return np.sum(-(np.log(distances/mu)**2/(2*sigma_squared_likelihood)))
 
 
 def log_posterior(x):
