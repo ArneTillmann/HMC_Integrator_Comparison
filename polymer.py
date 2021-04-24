@@ -7,20 +7,21 @@ from hmc_sampler import LeapfrogHMC
 from hmc_sampler import U7HMC
 import gelman_rubin
 from write_pdb import write_ensemble, write_VMD_script
+import matplotlib.pyplot as plt
 
-mu_prior=3
-sigma_squared=0.1
-sigma_squared_likelihood=1
-number_of_monomere=30
+mu_prior=8
+sigma_squared=1
+sigma_squared_likelihood=0.2
+number_of_monomere=3
 dimension=3
 
 def log_prior(x):
     x = x.reshape(-1, 3)
     return np.sum(-(np.sqrt(np.sum((x[1:]-x[:-1])**2, axis=1))-mu_prior)**2/(2*sigma_squared))
 
-pairs = np.array([[0, 2],
-                  [0, 3]])
-distances = np.array([1.0, 1.5])
+pairs = np.array([[0, 1],
+                  [0, 2]])
+distances = np.array([2000, 1.5])
 
 def log_likelihood(x):
     # mu = np.linalg.norm(x[None,:] - x[:, None], axis=2)
@@ -30,7 +31,7 @@ def log_likelihood(x):
 
 
 def log_posterior(x):
-    return log_prior(x) #+ log_likelihood(x)
+    return log_prior(x) + log_likelihood(x)
 
 gradient_log_posterior = grad(log_posterior)
 hessian_log_posterior = jacobian(gradient_log_posterior)
@@ -41,9 +42,23 @@ x=np.abs(np.random.normal(0,1,(number_of_monomere,3))).ravel()
 # b = int(np.floor(chain_length ** (1.0 / 3)))
 # a = int(np.floor(chain_length / b))
 
+def plot_hist_all_dist(chain):
+    dist = np.triu(np.linalg.norm(chain[:,None,:]-chain[:,:,None,:], axis=3))
+    dist = dist[np.nonzero(dist)]
+    plt.hist(dist, bins = 100)
+    plt.show()
+
+
+def plot_hist_data(chain, pair):
+    dist = np.linalg.norm(chain[:,pairs[pair,0]]-chain[:,pairs[pair,1]], axis = 1)
+    print(dist)
+    plt.hist(dist, bins = 100)
+    plt.show()
+
+
 
 if __name__ == "__main__":
-    chain_length = 500
+    chain_length = 10000
     time = 10
     trajectory_length = 10
     stepsize = 0.2
@@ -58,6 +73,9 @@ if __name__ == "__main__":
 
     chain_leapfrog.reshape(chain_length +1, number_of_monomere, dimension)
     chain_leapfrog = chain_leapfrog[:].reshape(chain_length+1, number_of_monomere, dimension)
+    print(chain_leapfrog.shape)
+    # plot_hist_all_dist(chain_leapfrog)
+    plot_hist_data(chain_leapfrog[:], 0)
 
     # chain_u7.reshape(-1, number_of_monomere, dimension)
     # chain_u7 = chain_u7[:].reshape(chain_length+1, number_of_monomere, dimension)
