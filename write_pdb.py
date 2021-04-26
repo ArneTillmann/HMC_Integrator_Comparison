@@ -75,6 +75,8 @@ def write_VMD_script(ensemble_pdb_file, bead_radius, n_beads,  output_file):
              'mol delrep 0 0',
              'mol representation VDW',
              'mol addrep 0'
+             'mol representation trace'
+             'mol addrep 0'
             ]
 
     indices = ' '.join(map(str, range(n_beads)))
