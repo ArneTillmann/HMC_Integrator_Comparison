@@ -17,7 +17,12 @@ dimension=3
 
 def log_prior(x):
     x = x.reshape(-1, 3)
-    return np.sum(-(np.sqrt(np.sum((x[1:]-x[:-1])**2, axis=1))-mu_prior)**2/(2*sigma_squared))
+    chain_log_prob = np.sum(-(np.sqrt(np.sum((x[1:]-x[:-1])**2, axis=1))-mu_prior)**2/(2*sigma_squared))
+    dm = np.sum((x[None, :] - x[:, None]) ** 2, axis=2)
+    dm2 = dm[inds_x, inds_y]
+    dm2 = dm2[dm2 < mu_prior * mu_prior]
+    volume_exclusion_log_prob = -np.sum((dm2 - mu_prior * mu_prior)**2 / (2 * sigma_squared))
+    return chain_log_prob + volume_exclusion_log_prob
 
 pairs = np.array([[0, 1],
                   [0, 2]])
