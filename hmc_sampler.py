@@ -108,16 +108,18 @@ class U7HMC(HMC):
 
         for i in range(self.trajectory_length-1):
             x += 1./2 * v * self.stepsize
-            v += (2./3 * self.stepsize * (self.gradient_log_prob(x)
+            tmp_grad = self.gradient_log_prob(x)
+            v += (2./3 * self.stepsize * (tmp_grad
                 + self.stepsize**2/24
-                * np.matmul(self.hessian_log_prog(x),self.gradient_log_prob(x))))
+                * np.matmul(self.hessian_log_prog(x),tmp_grad)))
             x += 1./2 * v * self.stepsize
             v += 1./3 * self.stepsize * self.gradient_log_prob(x)
 
         x += 1./2 * v * self.stepsize
-        v += (2./3 * self.stepsize * (self.gradient_log_prob(x)
+        tmp_grad = self.gradient_log_prob(x)
+        v += (2./3 * self.stepsize * (tmp_grad
             + self.stepsize**2./24
-            * np.matmul(self.hessian_log_prog(x),self.gradient_log_prob(x))))
+            * np.matmul(self.hessian_log_prog(x),tmp_grad)))
         x += 1./2 * v * self.stepsize
         v += 1./6 * self.stepsize * self.gradient_log_prob(x)
 

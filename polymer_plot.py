@@ -5,25 +5,23 @@ import matplotlib.pyplot as plt
 import numpy as np
 from hmc_sampler import LeapfrogHMC
 from hmc_sampler import U7HMC
-from polymer import log_posterior, gradient_log_posterior, hessian_log_posterior
+from polymer import log_posterior, gradient_log_posterior, hessian_log_posterior, x, mu_prior, sigma_squared, sigma_squared_likelihood, dimension, number_of_monomere, pair_combinations, inds_x, inds_y, pairs, distances
+import polymer
 import gelman_rubin
 #from rpy2.robjects.packages import importr
 #import rpy2.robjects as robjects
 #from rpy2.robjects import numpy2ri
 from sklearn.linear_model import LinearRegression
 
-l=3
-sigma_squared=1
-sigma_squared_likelihood=1
-number_of_monomere=10
-dimension=3
 
-x_0=np.abs(np.random.normal(0,1,(number_of_monomere,3))).ravel()
-chain_length = 500
 
-time = 10
-trajectory_length = np.arange(1, 50, 3)
+chain_length = 50
+
+time = 0.1
+trajectory_length = np.arange(10, 20, 2)
 stepsize = time/trajectory_length
+print(stepsize)
+
 
 b = int(np.floor(chain_length ** (1.0 / 3)))
 a = int(np.floor(chain_length / b))
@@ -49,7 +47,7 @@ test2=[]
 
 
 for i in range(len(trajectory_length)):
-    chain, acceptance_rate = LeapfrogHMC(log_posterior, gradient_log_posterior, stepsize[i], trajectory_length[i]).build_chain(x_0, chain_length)
+    chain, acceptance_rate = LeapfrogHMC(log_posterior, gradient_log_posterior, stepsize[i], trajectory_length[i]).build_chain(x, chain_length)
 
     chain = np.expand_dims(chain, axis=0)
 
@@ -73,12 +71,12 @@ for i in range(len(trajectory_length)):
     #     test1.append(False)
 
 
-for i in range(len(trajectory_length)):
-    chain, acceptance_rate = U7HMC(log_posterior, gradient_log_posterior, hessian_log_posterior, stepsize[i], trajectory_length[i]).build_chain(x_0, chain_length)
-    chain = np.expand_dims(chain, axis=0)
+# for i in range(len(trajectory_length)):
+    # chain, acceptance_rate = U7HMC(log_posterior, gradient_log_posterior, hessian_log_posterior, stepsize[i], trajectory_length[i]).build_chain(x, chain_length)
+    # chain = np.expand_dims(chain, axis=0)
     # Z2[i] = gelman_rubin.improved_estimator_PSRF(b, a, 1, chain_length,
     #                                                 dimension, chain)
-    Z4[i] = acceptance_rate
+    # Z4[i] = acceptance_rate
     # chain = chain.reshape((chain_length+1,dimension))
     # numpy2ri.activate()
     # nr,nc = chain.shape
@@ -111,8 +109,8 @@ f2=20
 
 plot1 = plt.figure(1)
 plt.tick_params(axis='both', labelsize=15)
-plt.plot(stepsize[1:], Z3[1:], 's--', label='Leapfrog')
-plt.plot(stepsize[1:], Z4[1:], '^--', label='U7')
+plt.plot(stepsize[:], Z3[:], 's--', label='Leapfrog')
+plt.plot(stepsize[:], Z4[:], '^--', label='U7')
 #plt.plot(stepsize[2:], Z3_pred, '--', color='#1f77b4')
 #plt.plot(stepsize[2:], Z4_pred, '--', color='#ff7f0e')
 
