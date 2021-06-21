@@ -4,18 +4,22 @@ jupyter:
     text_representation:
       extension: .md
       format_name: markdown
-      format_version: '1.3'
-      jupytext_version: 1.11.2
+      format_version: '1.2'
+      jupytext_version: 1.7.1
   kernelspec:
     display_name: Python 3
     language: python
     name: python3
 ---
 
-# Comparing two integrators in the use case of HMC
-In this blog post we will compare the performance of two different integrators, sampling with Hamiltonian Monte Carlo (HMC). In HMC, the classical Leapfrog is still the state of the art method to generate new proposal states for the Metropolis Hastings algorithm. In [this paper](https://arxiv.org/pdf/2007.05308.pdf) Jun Hao Hue et al. benchmark the performance of the Leapfrog and $U_7$ against various classical and quantum systems, but not against sampling methods used in HMC. The $U_7$ approximation was first discovered in [https://reader.elsevier.com/reader/sd/pii/S0375960197000030?token=7FF329D99F3F86911490FC7261984FF7C3F0C78AF8E8ECA9171C9F6A79F55FEBC5F0A132532C09AA45A4B1061464514E&originRegion=eu-west-1&originCreation=20210617130838], reconsidered in [https://arxiv.org/pdf/cond-mat/0111055.pdf], but later independently obtained through an entirely differentapproach in [Chau et al.](https://iopscience.iop.org/article/10.1088/1367-2630/aacde1/pdf).
+# A more accurate integrator for HMC
+Hamiltonian Monte Carlo (HMC) (TODO: link) is a very popular MCMC sampling algorithm, which crucially depends on an integration scheme to approximate Hamiltonian's equations of motion.  
+In this blog post, we will learn more about integration schemes and discuss two different integrators:
+The first one is the classical leapfrog, which is the standard method to generate new proposal states for HMC. The second integration scheme is the $U_7$, which is more accurate, but also computationally more expensive.  
 
-This blog post aims at giving you first a brief introduction to HMC, then describes formally the two integrators and then numerically evaluates their performance. In case you are new to HMC or MCMC methods, a good starting point might be the [series of blog posts](https://www.tweag.io/blog/2019-10-25-mcmc-intro1/) by Simeon Carstens. 
+In this blog post, we will first remind you of the basic idea of HMC and then expose you to some classical menchanics.
+With these foundations set, we formally describe the two integrators and then tentatively compare the performance of corresponding HMC implementations.
+In case you are new to HMC or MCMC methods, a good starting point might be Tweag's [blog post series](https://www.tweag.io/blog/2019-10-25-mcmc-intro1/). 
 
 
 # Introduction
@@ -122,6 +126,10 @@ Evolutionary, that is why first a five-factor approximation was considered by [C
 ## The $U_7$
 The novelty of the $U_7$ consists of the usage of the second order derivative of the potential energy. This comes along with a few more updates of $x$ and $v$ per step and yields a lower error. 
 
+The $U_7$ approximation was first discovered in [https://reader.elsevier.com/reader/sd/pii/S0375960197000030?token=7FF329D99F3F86911490FC7261984FF7C3F0C78AF8E8ECA9171C9F6A79F55FEBC5F0A132532C09AA45A4B1061464514E&originRegion=eu-west-1&originCreation=20210617130838], reconsidered in [https://arxiv.org/pdf/cond-mat/0111055.pdf], but later independently obtained through an entirely different approach in [Chau et al.](https://iopscience.iop.org/article/10.1088/1367-2630/aacde1/pdf).
+
+In [this paper](https://arxiv.org/pdf/2007.05308.pdf) Jun Hao Hue et al. benchmark the performance of the leapfrog and $U_7$ against various classical and quantum systems, but are not concerned with their use in HMC.
+
 Concretely, the $U_7$, as the name suggests, is in the work of [Chau et al.](https://iopscience.iop.org/article/10.1088/1367-2630/aacde1/pdf) a seven factor approximation. The usage of a special [property](https://iopscience.iop.org/article/10.1088/1367-2630/aacde1/pdf)made it possible to reduce three factors to one, making it a five factor approximation. Because this derivation uses quantum mechanical characteristics, I want to present a more intuitive way, how the U7 can be derived.
 
 One way to think about this is, that when we want to apply $e ^A \cdot e^B \cdot e^C= e^{A+B+C}$ to operators we remember that we must take into account, that they do not commute. So, this identity does not hold in the general case, but what we can do is use a series expansion, which, similar to a Taylor expansion, involves higher order derivatives. To verify this, check out [Siu A. Chin work](https://www.sciencedirect.com/science/article/pii/S0375960197000030). Then cutting off the expansion leaves us with an additional error, but even though we could reduce the number of factors, the approximation remains an accuracy with error order $\cal{O}(t^5)$. Consequently, the $U_7$ is exact up to fourth order and is therefore said to be a fourth-order approximation.[^2] 
@@ -162,16 +170,21 @@ Bare in mind, that the higher accuracy, achieved with the $U_7$, comes along wit
 Note also, the longer the stepsize, the larger the error and the less likely the acceptance of the proposed state for the MCMC algorythm.
 
 
-## Comparison 
-As mentioned in the beginning, our goal was, to compare the leapfrog with the U7 to draw samples from a probability distribution. For this purpose we chose two different toy examples and two methods of convergence diagnostics to measure the fit of the drawn samples. 
+## Benchmarking leapfrog and U7-based HMC
+To compare the performance of the leapfrog and U7 integration schemes in the context of HMC, we plug above implementations into HMC and sample from two different probability distributions.
 
-The first example is a 100 dimensional standard normal distribution. We fixed the time to 10 and plotted the acceptance rate for different stepsizes against each other. The expected higher acceptance rate, due to a better approximation of the deterministic behaviour, can easily be observed. 
+The first example is a 100-dimensional standard normal distribution.
+Because of the high symmetry of this distribution, we have to be careful to not compare apples and oranges:
+if we integrate for different total times, the trajectory might double back and we would waste computational effort (TODO: link or explanation).
+We thus fix the total integration time (given by `number of integration steps x time step`) to ten time units and run HMC for different combinations of time step and number of integration steps.
+If we can use a higher stepsize, we have to perform less integration steps, which means less costly gradient and Hessian evaluations.
 
 
 ![title](Figure_2.png)
 
 
-Unexpected peak at stepsize 1,5 might be explained by the hidden Hamiltonian, but we could not figure out for sure, why this is the case. 
+We find indeed that the acceptance rate stays almost constant at almost one for a wide range of time steps, while the HMC implementation based on the leapfrog integration scheme shows rapidly diminishing acceptance rates.
+This confirms that we have implemented the U7 integrator correctly and makes us even more excited to test it on a "real" system!
 
 
 summary: hessian sparse Zeitgewinn
