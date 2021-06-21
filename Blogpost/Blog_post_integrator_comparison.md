@@ -4,36 +4,36 @@ jupyter:
     text_representation:
       extension: .md
       format_name: markdown
-      format_version: '1.3'
-      jupytext_version: 1.11.2
+      format_version: '1.2'
+      jupytext_version: 1.7.1
   kernelspec:
     display_name: Python 3
     language: python
     name: python3
 ---
 
-# Comparing two integrators in the use case of HMC
-In this blog post we will compare the performance of two different integrators, sampling with Hamiltonian Monte Carlo (HMC). In HMC, the classical Leapfrog is still the state of the art method to generate new proposal states for the Metropolis Hastings algorithm. In [this paper](https://arxiv.org/pdf/2007.05308.pdf) Jun Hao Hue et al. benchmark the performance of the Leapfrog and $U_7$ against various classical and quantum systems, but not against sampling methods used in HMC. The $U_7$ approximation was first discovered in [https://reader.elsevier.com/reader/sd/pii/S0375960197000030?token=7FF329D99F3F86911490FC7261984FF7C3F0C78AF8E8ECA9171C9F6A79F55FEBC5F0A132532C09AA45A4B1061464514E&originRegion=eu-west-1&originCreation=20210617130838], reconsidered in [https://arxiv.org/pdf/cond-mat/0111055.pdf], but later independently obtained through an entirely differentapproach in [Chau et al.](https://iopscience.iop.org/article/10.1088/1367-2630/aacde1/pdf).
+# A more accurate integrator for HMC
+Hamiltonian Monte Carlo (HMC) (TODO: link) is a very popular MCMC sampling algorithm, which crucially depends on an integration scheme to approximate Hamiltonian's equations of motion.  
+In this blog post, we will learn more about integration schemes and discuss two different integrators:
+The first one is the classical leapfrog, which is the standard method to generate new proposal states for HMC. The second integration scheme is the $U_7$, which is more accurate, but also computationally more expensive.  
 
-This blog post aims at giving you first a brief introduction to HMC, then describes formally the two integrators and then numerically evaluates their performance. In case you are new to HMC or MCMC methods, a good starting point might be the [series of blog posts](https://www.tweag.io/blog/2019-10-25-mcmc-intro1/) by Simeon Carstens. 
+In this blog post, we will first remind you of the basic idea of HMC and then expose you to some classical menchanics.
+With these foundations set, we formally describe the two integrators and then tentatively compare the performance of corresponding HMC implementations.
+In case you are new to HMC or MCMC methods, a good starting point might be Tweag's [blog post series](https://www.tweag.io/blog/2019-10-25-mcmc-intro1/). 
 
 
 # Introduction
-Broadly speaking the idea of HMC is that given a previous state $x$ of our Markov chain, we draw a random momentum $v$ from a normal distribution and simulate the behaviour of a fictive particle with starting point $(x,v)$. This intuition makes sense, because our probability density gives rise to a potential energy and vice versa, see [Simeon’ s blog post]( https://www.tweag.io/blog/2020-08-06-mcmc-intro3/). This deterministic behaviour is simulated for some fixed time $t$. The final state $(x^\star, v^\star)$ of the particle after some time t will then serve as the new proposal state of the Metropolis-Hastings algorithm.
+Broadly speaking the idea of HMC is that given a previous state $x$ of our Markov chain, we draw a random momentum $v$ from a normal distribution and simulate the behaviour of a fictive particle with starting point $(x,v)$.
+This intuition makes sense, because our probability density gives rise to a potential energy and vice versa (see, for example, [Tweag's HMC blog post](https://www.tweag.io/blog/2020-08-06-mcmc-intro3/)).
+This deterministic behaviour is simulated for some fixed time $t$.
+The final state $(x^\star, v^\star)$ of the particle after some time t will then serve as the new proposal state of a Metropolis-Hastings algorithm.
 
-You might wonder, why we can draw the initial momentum $v$ from a normal distribution. As can be seen the joint probability distribution
-$$
-\begin{align*}
- p(x,v) \propto & \,\exp \{-H(x,v)\} \\
-= & \,\exp \{-K(v)\} \times \exp \{-E(x)\}\\
- =& \,\exp \{-\frac{|v|^2}{2} \} \times p(x).
-\end{align*}
-$$
-Since we just multiply the two densities for $x$ and $v$, by definition, the two variables are independent from each other, therefore we can just sample $v$ independently of $x$. Moreover, it can be seen that the marginal distribution of $v$ is just the normal distribution up to some constant ($\propto$ means, that $A\propto B \iff A = kB$ for an arbitrary $k$).
+The motion of the fictive particle are governed by the Hamiltonian $$H(x,v) = K(v) + E(x).$$
+Technically, the Hamiltonian does not necessarily need to be of the form "kinetic energy plus potential energy", meaning "separable", but it is in the most popular HMC implementations and it makes things a lot easier.
+In fact, you can apply the splitting methods we discuss below to nonseparable Hamiltonians as well. 
 
-The Hamiltonian is then given by $$H(x,v) = K(v) + E(x).$$ Usually, the Hamiltonian does not need to be of the form kinetic energy plus potential energy (separable), but it certainly makes things a lot easier and is a reasonable assumption for most use cases arising from Bayesian statistics and beyond. In fact, you can apply splitting methods, which we will do in the following, to nonseparable Hamiltonians as well, though some more math will be necessary. 
-
-As mentioned above, the key concept of the HMC method is to simulate the fictive particle's dynamics. In terms of the Hamiltonian formalism, this is done by solving a set of differential equations, namely
+As mentioned above, the key concept of the HMC method is to simulate the fictive particle's dynamics.
+In terms of the Hamiltonian formalism, this is done by solving a set of differential equations, namely
 $$
 \frac{dx}{dt} = \frac{\partial H }{\partial v}, \hspace{15pt} \frac{dv}{dt}= -\frac{\partial H }{\partial x}.
 $$
@@ -41,28 +41,35 @@ The notation can be simplified by introducing $z=(x,v)$. Then the Hamiltonian eq
 $$
 \dot{z} = \begin{pmatrix}\dot x \\ \dot v\end{pmatrix} = \begin{pmatrix}\frac{\partial H }{\partial v} \\ -\frac{\partial H }{\partial x}\end{pmatrix} = \{z,H(z)\}
 $$
-where $\{\cdot, \cdot \}$ is the [Poisson bracket](https://en.wikipedia.org/wiki/Poisson_bracket). The Poisson bracket is a differential operator of first order, which means, that it uses the first derivative. What the Poisson bracket essentially does is describe the change of any observable quantity with respect to the time evolution of a Hamiltonian system. Furthermore, by introducing an operator $D_{H\cdot} = \{ \cdot, H \}$, the equation can be further simplified to 
+where $\{\cdot, \cdot \}$ is the [Poisson bracket](https://en.wikipedia.org/wiki/Poisson_bracket).
+The Poisson bracket is a differential operator of first order, which means that it uses first derivatives.
+It essentially describes the change of any observable quantity with respect to the time evolution of a Hamiltonian system.
+Furthermore, by introducing an operator $D_{H\cdot} = \{ \cdot, H \}$, the equation can be further simplified to 
 $$
 \dot z = D_H z
 $$
-and is solved by
+and is formally solved by
 $$
 z(t) = \exp ( t D_H) z(0) = \exp ( t(D_K + D_E)) z(0).
 $$ 
 Note that $D_K$ and $D_E$ stand respectively for the operators $\{ \cdot, K \}$ and $\{ \cdot, E \}.$
-In general, the solution depends highly on the potential energy (which translates to the posterior distribution in the Bayesian setting) and can therefore be infeasible. 
+The solution depends crucially on the potential energy, which in turn relates to the probability distribution of interest.
+The latter in general is of non-standard form and the above solution to the Hamiltonian equations of motion can therefore not be obtained analytically. 
 
 
-## Splitting methods
+## A general recipe for symplectic integration: splitting methods
+Because analytical solutions to the equations of motions are usually not available, we have to resort to numerical integration to get at least an approximate solution.
+As discussed in a footnote of [Tweag's HMC blog post](https://www.tweag.io/blog/2020-08-06-mcmc-intro3/), we can't just use any integratoin scheme in HMC, but we should rather make sure it maintains [*symplecticity*](https://en.wikipedia.org/wiki/Symplectic_integrator#A_fourth-order_example), a crucial property of Hamilton's equations of motion.
+A very general idea way of deriving symplectic integrator of arbitrary order are splitting methods, which we are presenting now.
+
+
 In 1995 [Suzuki](http://people.ucalgary.ca/~dfeder/535/suzuki.pdf) proposed a new way to approximate expressions such as the solution of the Hamiltonian equations,
 $$
 \exp ( t(D_K + D_E)) = \prod_{i=1}^{k/2} \exp (c_i t D_K) \exp (d_i t D_E) + \cal{O}(t^{k+1}),
 $$
-where $\Sigma_{i=1}^k c_i = \Sigma_{i=1}^k d_i =1.$ You can think of this formula as a generalization of the identity $e^{m+n} = e ^m \cdot e^n.$ The error term is a result of the fact, that operators, such as matrices, generally do not commute. 
+where $\Sigma_{i=1}^k c_i = \Sigma_{i=1}^k d_i =1.$ You can think of this formula as a generalization of the identity $e^{m+n} = e ^m \cdot e^n.$ The error term is a result of the fact that operators (here represented as matrices) generally do not commute. 
 
 Each of the factors $\exp (c_i t D_K)$ will correspond to an update of the state $x$ and similarly $\exp (c_i t D_E)$ can be translated to an update of the momentum $v.$ [^1]
-
-Imagine $(x^\star,v^\star)$ would be the exact solution after time $t$ and $(x_{t},v_{t})$ an approximation, then we would say, that the approximation is of n-th order and write $\mathcal{O}(t^n)$, if $||(x^\star,v^\star)-(x_{t},v_{t})||\leq C * t^n$ and $C$ is independent of the $t.$
 
 Now, that we know how to come up with an approximation of the solution of the Hamiltonian equations, lets give a first example of one approximative algorithm:
 
@@ -112,27 +119,42 @@ def integrate(x, v):
     return x, v
 ```
 
-You might wonder, why should we look further, if we have found a sufficiently exact approximation of what we desired. We can always diminish the error by shortening the $stepsize$ and increasing the $trajectory\_length.$
+An important concept when talking about accuracy of integration schemes is that of the *order* of an integrator:
+say $(x^\star,v^\star)$ is the exact solution after time $t$ and $(x_{t},v_{t})$ an approximation, then we say that the approximation is *of n-th order* and write $\mathcal{O}(t^n)$, if $||(x^\star,v^\star)-(x_{t},v_{t})||\leq C * t^n$ and $C$ is independent of $t$.
 
-Well, one answer might simply be, what if there is a more efficient way. But secondly, the Leapfrog is already not exact even for constant force $- \nabla E = \text{const.}$
+**TODO:** discuss order of leapfrog 
 
-Evolutionary, that is why first a five-factor approximation was considered by [Chau et al.](https://iopscience.iop.org/article/10.1088/1367-2630/aacde1/pdf). Unfortunately, this approximation has still error terms of third order. And this in turn was reason for the development of:
+Now you might wonder: why look further if we have found a method yielding a reasonably exact approximation?
+After all, we can always diminish the error by shortening the stepsize and increasing the trajectory length!
+
+Well, one answer is that there might be a more efficient way to approximate the equations of motions.
+But it also turns out that the Leapfrog is already not exact even for situations with a constant force $\vec F = -\nabla E = \text{const}$.
+This is exactly why, originally, a five-factor approximation was considered by [Chau et al.](https://iopscience.iop.org/article/10.1088/1367-2630/aacde1/pdf).
+Unfortunately, this approximation has still error terms of third order.
+And to get rid of those, they propose the...
 
 
 ## The $U_7$
 The novelty of the $U_7$ consists of the usage of the second order derivative of the potential energy. This comes along with a few more updates of $x$ and $v$ per step and yields a lower error. 
 
-Concretely, the $U_7$, as the name suggests, is in the work of [Chau et al.](https://iopscience.iop.org/article/10.1088/1367-2630/aacde1/pdf) a seven factor approximation. The usage of a special [property](https://iopscience.iop.org/article/10.1088/1367-2630/aacde1/pdf)made it possible to reduce three factors to one, making it a five factor approximation. Because this derivation uses quantum mechanical characteristics, I want to present a more intuitive way, how the U7 can be derived.
+The $U_7$ approximation was first discovered by [Chin (1997)](https://www.sciencedirect.com/science/article/abs/pii/S0375960197000030), but later independently obtained through an entirely different approach in [Chau et al.](https://iopscience.iop.org/article/10.1088/1367-2630/aacde1).
 
-One way to think about this is, that when we want to apply $e ^A \cdot e^B \cdot e^C= e^{A+B+C}$ to operators we remember that we must take into account, that they do not commute. So, this identity does not hold in the general case, but what we can do is use a series expansion, which, similar to a Taylor expansion, involves higher order derivatives. To verify this, check out [Siu A. Chin work](https://www.sciencedirect.com/science/article/pii/S0375960197000030). Then cutting off the expansion leaves us with an additional error, but even though we could reduce the number of factors, the approximation remains an accuracy with error order $\cal{O}(t^5)$. Consequently, the $U_7$ is exact up to fourth order and is therefore said to be a fourth-order approximation.[^2] 
+Concretely, the $U_7$, as the name suggests, is in the work of Chau *et al.* a seven factor approximation.
+The use of a special [trick](https://en.wikipedia.org/wiki/Baker%E2%80%93Campbell%E2%80%93Hausdorff_formula) made it possible to reduce three factors to one, making it a five factor approximation.
+Because the Chau *et al.* paper is focused on quantum mechanical applicatoins, we want to sketch a more intuitive way of deriving the U7.
 
-Either or, the newly formed term, involes the second order derivative and thus the $U_7$ factorization is given by
+When we want to apply $e ^A \cdot e^B \cdot e^C= e^{A+B+C}$ to operators, we remember that we must take into account that they do not commute.
+This identity thus does not hold in the general case, but we can use a series expansion, which, similar to a Taylor expansion, involves higher order derivatives. This is the approach taken in Chin's paper.
+Then cutting off the expansion leaves us with an additional error, but even though we were able to reduce the number of factors, the approximation contains an error of order $\cal{O}(t^5)$.
+Consequently, the $U_7$ is exact up to fourth order and is therefore said to be a fourth-order approximation.[^2] 
+
+Either way, the newly formed term involes the second order derivative and the final $U_7$ factorization is given by
 
 $$U_7 = \exp (\frac {1}{6}t D_E)\exp (\frac {1}{2}t D_K)\exp (\frac {2}{3}t D_\tilde{V})\exp ( \frac {1}{2}t D_K)\exp (\frac {1}{6}t D_E),$$
 
 whereas $D_\tilde V = \{\cdot , V + \frac{1}{48}[t\nabla V ]^2\}.$ 
 
-A simplified python method of the algorithm described above would look like this:
+A Python implementation of the algorithm described above would look like this:
 
 ```python
 def integrate(x, v):
@@ -157,24 +179,56 @@ def integrate(x, v):
     return x, v
 ```
 
-Bare in mind, that the higher accuracy, achieved with the $U_7$, comes along with a non-negligible, additional computational cost. 
-
-Note also, the longer the stepsize, the larger the error and the less likely the acceptance of the proposed state for the MCMC algorythm.
+Bear in mind that the higher accuracy achieved with $U_7$ comes with a non-negligible additional computational cost, namely evalutating the gradient two times instead of one time and additionally evaluating the matrix of second derivatives. 
 
 
-## Comparison 
-As mentioned in the beginning, our goal was, to compare the leapfrog with the U7 to draw samples from a probability distribution. For this purpose we chose two different toy examples and two methods of convergence diagnostics to measure the fit of the drawn samples. 
+## Benchmarking leapfrog and U7-based HMC
+In [this paper](https://arxiv.org/abs/2007.05308), Jun Hao Hue *et al.* benchmark the performance of the leapfrog and $U_7$ against various classical and quantum systems, but are not concerned with their use in HMC.
 
-The first example is a 100 dimensional standard normal distribution. We fixed the time to 10 and plotted the acceptance rate for different stepsizes against each other. The expected higher acceptance rate, due to a better approximation of the deterministic behaviour, can easily be observed. 
+To compare the performance of the leapfrog and U7 integration schemes in the context of HMC, we plug above implementations into HMC and sample from two different probability distributions.
+
+The first example is a 100-dimensional standard normal distribution.
+Because of the high symmetry of this distribution, we have to be careful to not compare apples and oranges:
+if we integrate for different total times, the trajectory might double back and we would waste computational effort (TODO: link or explanation).
+We thus fix the total integration time (given by `number of integration steps x time step`) to ten time units and run HMC for different combinations of time step and number of integration steps.
+If we can use a higher stepsize, we have to perform less integration steps, which means less costly gradient and Hessian evaluations.
 
 
 ![title](Figure_2.png)
 
 
-Unexpected peak at stepsize 1,5 might be explained by the hidden Hamiltonian, but we could not figure out for sure, why this is the case. 
+We find indeed that the acceptance rate stays almost constant at almost one for a wide range of time steps, while the HMC implementation based on the leapfrog integration scheme shows rapidly diminishing acceptance rates.
+This confirms that we have implemented the U7 integrator correctly and makes us even more excited to test it on a "real" system!
 
+As a more practical application, we consider a simple, coarse-grained polymer model of a biomolecule, for example, a protein or DNA.
+In biomolecular structure determination, one seeks to infer the coordinates of atoms or coarse-grained modeling units (*monomers*) of a polymer model from data obtained from biophysical experiments.
+Often, this data comes in the form of distances between monomers.
+In Inferential Structure Determination (ISD, [Rieping et al. (2005)](https://science.sciencemag.org/content/309/5732/303.long)), structure determination is viewed as a problem in Bayesian inference:
+given the prior information $I$ in the form of a coarse-grained polymer model and data $D$ from experiments, what do we know about the coordinates $x$ of the underlying biomolecular structure?
+The answer is given by the posterior distribution
+$$
+p(x|D,I) \propto p(D|x, I) \times p(x|I)
+$$
+, which is intractable and sampling from which can thus only be achieved using MCMC methods.  
 
-summary: hessian sparse Zeitgewinn
+In our case, we consider a polymer of $N=30$ spherical particles of radius $r$.
+The distances between neighboring particles are distributed normally and there is a "volume exclusion" force that makes sure particles don't overlap much.
+We furthermore have "measured" a distance $2r$ between the first and the 6th and the first and the 26th monomer and assume the likelihood is given by a [log-normal distribution](https://en.wikipedia.org/wiki/Log-normal_distribution).  
+This setup results in a non-tractable posterior distribution over $N \times 3=90$ parameters, from which we sample using HMC with either the leapfrog or the $U_7$ integrator.  
+Drawing 10000 samples with a trajectory length of ten steps and varying time steps, we find the following results for the [effective sample size (ESS)](https://mc-stan.org/docs/2_19/reference-manual/effective-sample-size-section.html) of the log-posterior probability and the acceptance rate:
+
+![polymer.png](polymer.png)
+
+We find that, just as for the 100-dimensional normal distribution, the $U_7$ HMC shows significantly increased acceptance rates as compared to the leapfrog HMC.
+The calculation of the ESS shows that for the two smallest timesteps tested, the estimated number of independent samples is much higher for the $U_7$-based HMC than for the standard implementation.
+It is also important to note that if the acceptance rate is very low, the ESS tends to get vastly overestimated (**TODO:** remember reference), which means that also for the third timestep, the ESS obtained with standard HMC is probably somewhat lower than for the implementation with the more accurate integrator.  
+
+What does this mean w.r.t. to absolute performance? Remember that while the $U_7$ yields better acceptance rates and higher ESS, it also requires more computing time.
+We can estimate this additional computing time by assuming that the most expensive part during numerical integration is the evaluation of the square root in the distance calculations.
+Because of the volume exclusion term, each pairwise distance needs to get evaluated.
+This happens one time in a leapfrog iteration, but two times during an $U_7$ iteration, because the gradient / second derivatives are evaluated at two different points in time instead of only one.
+We can thus estimate that the computational effort for a $U_7$ iteration is approximately twice the effort for a leapfrog iteration, although there surely is some additional, implementation-specific overhead.
+Given that, based on the ESS estimation, we can achieve much more than twice the number of independent samples with $U_7$, we can conclude that the $U_7$ integrator indeed is a very promising way to boost HMC performance.
 
 
 ## Footnotes
@@ -195,8 +249,3 @@ $$m\frac{d^2x}{dt^2}  = \frac{dv}{dt} = -\frac{\partial}{\partial x} E(x) = F$$
 leaves us with Newton's beautiful second law of motion.
 
 -->
-footnote
-
-```python
-
-```
