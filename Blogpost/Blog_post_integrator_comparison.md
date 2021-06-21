@@ -217,7 +217,7 @@ We furthermore have "measured" a distance $2r$ between the first and the 6th and
 This setup results in a non-tractable posterior distribution over $N \times 3=90$ parameters, from which we sample using HMC with either the leapfrog or the $U_7$ integrator.  
 Drawing 10000 samples with a trajectory length of ten steps and varying time steps, we find the following results for the [effective sample size (ESS)](https://mc-stan.org/docs/2_19/reference-manual/effective-sample-size-section.html) of the log-posterior probability and the acceptance rate:
 
-![title](polymer.png)
+![polymer.png](polymer.png)
 
 We find that, just as for the 100-dimensional normal distribution, the $U_7$ HMC shows significantly increased acceptance rates as compared to the leapfrog HMC.
 The calculation of the ESS shows that for the two smallest timesteps tested, the estimated number of independent samples is much higher for the $U_7$-based HMC than for the standard implementation.
