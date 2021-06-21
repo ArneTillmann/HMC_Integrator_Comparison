@@ -183,7 +183,7 @@ Bear in mind that the higher accuracy achieved with $U_7$ comes with a non-negli
 
 
 ## Benchmarking leapfrog and U7-based HMC
-In [this paper](https://arxiv.org/abs/2007.05308) Jun Hao Hue et al. benchmark the performance of the leapfrog and $U_7$ against various classical and quantum systems, but are not concerned with their use in HMC.
+In [this paper](https://arxiv.org/abs/2007.05308), Jun Hao Hue *et al.* benchmark the performance of the leapfrog and $U_7$ against various classical and quantum systems, but are not concerned with their use in HMC.
 
 To compare the performance of the leapfrog and U7 integration schemes in the context of HMC, we plug above implementations into HMC and sample from two different probability distributions.
 
@@ -207,7 +207,7 @@ In Inferential Structure Determination (ISD, [Rieping et al. (2005)](https://sci
 given the prior information $I$ in the form of a coarse-grained polymer model and data $D$ from experiments, what do we know about the coordinates $x$ of the underlying biomolecular structure?
 The answer is given by the posterior distribution
 $$
-p(x|D,I) \propto p(D|x, I) \ times p(x|I)
+p(x|D,I) \propto p(D|x, I) \times p(x|I)
 $$
 , which is intractable and sampling from which can thus only be achieved using MCMC methods.  
 
