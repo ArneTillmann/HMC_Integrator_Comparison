@@ -200,8 +200,35 @@ If we can use a higher stepsize, we have to perform less integration steps, whic
 We find indeed that the acceptance rate stays almost constant at almost one for a wide range of time steps, while the HMC implementation based on the leapfrog integration scheme shows rapidly diminishing acceptance rates.
 This confirms that we have implemented the U7 integrator correctly and makes us even more excited to test it on a "real" system!
 
+As a more practical application, we consider a simple, coarse-grained polymer model of a biomolecule, for example, a protein or DNA.
+In biomolecular structure determination, one seeks to infer the coordinates of atoms or coarse-grained modeling units (*monomers*) of a polymer model from data obtained from biophysical experiments.
+Often, this data comes in the form of distances between monomers.
+In Inferential Structure Determination (ISD, [Rieping et al. (2005)](https://science.sciencemag.org/content/309/5732/303.long)), structure determination is viewed as a problem in Bayesian inference:
+given the prior information $I$ in the form of a coarse-grained polymer model and data $D$ from experiments, what do we know about the coordinates $x$ of the underlying biomolecular structure?
+The answer is given by the posterior distribution
+$$
+p(x|D,I) \propto p(D|x, I) \ times p(x|I)
+$$
+, which is intractable and sampling from which can thus only be achieved using MCMC methods.  
 
-summary: hessian sparse Zeitgewinn
+In our case, we consider a polymer of $N=30$ spherical particles of radius $r$.
+The distances between neighboring particles are distributed normally and there is a "volume exclusion" force that makes sure particles don't overlap much.
+We furthermore have "measured" a distance $2r$ between the first and the 6th and the first and the 26th monomer and assume the likelihood is given by a [log-normal distribution](https://en.wikipedia.org/wiki/Log-normal_distribution).  
+This setup results in a non-tractable posterior distribution over $N \times 3=90$ parameters, from which we sample using HMC with either the leapfrog or the $U_7$ integrator.  
+Drawing 10000 samples with a trajectory length of ten steps and varying time steps, we find the following results for the [effective sample size (ESS)](https://mc-stan.org/docs/2_19/reference-manual/effective-sample-size-section.html) of the log-posterior probability and the acceptance rate:
+
+![title](polymer.png)
+
+We find that, just as for the 100-dimensional normal distribution, the $U_7$ HMC shows significantly increased acceptance rates as compared to the leapfrog HMC.
+The calculation of the ESS shows that for the two smallest timesteps tested, the estimated number of independent samples is much higher for the $U_7$-based HMC than for the standard implementation.
+It is also important to note that if the acceptance rate is very low, the ESS tends to get vastly overestimated (**TODO:** remember reference), which means that also for the third timestep, the ESS obtained with standard HMC is probably somewhat lower than for the implementation with the more accurate integrator.  
+
+What does this mean w.r.t. to absolute performance? Remember that while the $U_7$ yields better acceptance rates and higher ESS, it also requires more computing time.
+We can estimate this additional computing time by assuming that the most expensive part during numerical integration is the evaluation of the square root in the distance calculations.
+Because of the volume exclusion term, each pairwise distance needs to get evaluated.
+This happens one time in a leapfrog iteration, but two times during an $U_7$ iteration, because the gradient / second derivatives are evaluated at two different points in time instead of only one.
+We can thus estimate that the computational effort for a $U_7$ iteration is approximately twice the effort for a leapfrog iteration, although there surely is some additional, implementation-specific overhead.
+Given that, based on the ESS estimation, we can achieve much more than twice the number of independent samples with $U_7$, we can conclude that the $U_7$ integrator indeed is a very promising way to boost HMC performance.
 
 
 ## Footnotes
@@ -222,8 +249,3 @@ $$m\frac{d^2x}{dt^2}  = \frac{dv}{dt} = -\frac{\partial}{\partial x} E(x) = F$$
 leaves us with Newton's beautiful second law of motion.
 
 -->
-footnote
-
-```python
-
-```
