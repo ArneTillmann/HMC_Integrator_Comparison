@@ -4,8 +4,8 @@ jupyter:
     text_representation:
       extension: .md
       format_name: markdown
-      format_version: '1.2'
-      jupytext_version: 1.7.1
+      format_version: '1.3'
+      jupytext_version: 1.11.2
   kernelspec:
     display_name: Python 3
     language: python
@@ -69,7 +69,7 @@ $$
 $$
 where $\Sigma_{i=1}^k c_i = \Sigma_{i=1}^k d_i =1.$ You can think of this formula as a generalization of the identity $e^{m+n} = e ^m \cdot e^n.$ The error term is a result of the fact that operators (here represented as matrices) generally do not commute. 
 
-Each of the factors $\exp (c_i t D_K)$ will correspond to an update of the state $x$ and similarly $\exp (c_i t D_E)$ can be translated to an update of the momentum $v.$ [^1]
+Each of the factors $\exp (c_i t D_K)$ will correspond to an update of the state $x$ and similarly $\exp (d_i t D_E)$ can be translated to an update of the momentum $v.$ [^1]
 
 Now, that we know how to come up with an approximation of the solution of the Hamiltonian equations, lets give a first example of one approximative algorithm:
 
@@ -79,7 +79,7 @@ Now, that we know how to come up with an approximation of the solution of the Ha
 <!-- 
 For now, let's come back to our fictive particle. As so often the differential eqaution is actually not always analytically tractable and so we need a way to approximate the behaviour of our fictive particle. And this is where the leapfrog method comes into play. 
 --> 
-The intuition is, that we update the space coordinate $x$ and the momentum variable $v$ one after another multiple times. This behaviour is the reason for the name *Leapfrog*.
+The intuition behind the Leapfrog algorithm is that we update the space coordinate $x$ and the momentum variable $v$ one after the other multiple times. This is also the behaviour which has given *Leapfrog* its name.
 
 ![](Leapfrog.gif)
 
@@ -91,7 +91,7 @@ $$
 v_{i + 3/2} = v_{i+1/2} + \left(-\frac{\partial}{\partial x} E(x_{i+1})\right) \Delta t
 $$
 
-As you might have noticed, you need to perform half a step for the momentum in the beginning and the end. 
+As you might have noticed, you need to perform half a step for the momentum in the beginning and in the end. 
 So, in terms of Suzuki, the Leapfrog looks like this
 $$
 \text{Leapfrog} =  U_3 U_3 \cdots U_3, 
@@ -102,7 +102,7 @@ U_3 = \exp (\frac {1}{2}\Delta t D_E)\exp (\Delta t D_K)\exp (\frac {1}{2}\Delta
 $$
 The coefficients are $c_1 = 0,\, c_2 = 1,\, d_1=d_2 = \frac{1}{2}.$
 
-If we further divide our time $t$ into $t = stepsize * trajectory\_length$ and apply the Suzuki approximation $U3$ $trajectory\_length$-times, then a small function, approximating the desired behaviour for some time $t$, would have the following look:
+If we further divide our time $t$ into $t =  \text{stepsize} \cdot   \text{trajectory_length}$ and apply the Suzuki approximation $U_3$ $\text{trajectory_length}$-many times, then a small function, approximating the desired behaviour for some time $t$, would have the following form:
 
 ```python
 def integrate(x, v):
@@ -120,11 +120,11 @@ def integrate(x, v):
 ```
 
 An important concept when talking about accuracy of integration schemes is that of the *order* of an integrator:
-say $(x^\star,v^\star)$ is the exact solution after time $t$ and $(x_{t},v_{t})$ an approximation, then we say that the approximation is *of n-th order* and write $\mathcal{O}(t^n)$, if $||(x^\star,v^\star)-(x_{t},v_{t})||\leq C * t^n$ and $C$ is independent of $t$.
+say $(x^\star,v^\star)$ is the exact solution after time $t$ and $(x_{t},v_{t})$ an approximation, then we say that the approximation is of *n*th-order and write $\mathcal{O}(t^n)$, if $\Vert(x^\star,v^\star)-(x_{t},v_{t}) \Vert\leq C \cdot t^n$ and $C$ is independent of $t$.
 
 **TODO:** discuss order of leapfrog 
 
-Now you might wonder: why look further if we have found a method yielding a reasonably exact approximation?
+Now you might wonder: why look further since we have found a method yielding a reasonably exact approximation?
 After all, we can always diminish the error by shortening the stepsize and increasing the trajectory length!
 
 Well, one answer is that there might be a more efficient way to approximate the equations of motions.
@@ -135,18 +135,18 @@ And to get rid of those, they propose the...
 
 
 ## The $U_7$
-The novelty of the $U_7$ consists of the usage of the second order derivative of the potential energy. This comes along with a few more updates of $x$ and $v$ per step and yields a lower error. 
+The novelty of the $U_7$ consists of the usage of the second-order derivative of the potential energy. This comes along with a few more updates of $x$ and $v$ per step and yields a lower error. 
 
 The $U_7$ approximation was first discovered by [Chin (1997)](https://www.sciencedirect.com/science/article/abs/pii/S0375960197000030), but later independently obtained through an entirely different approach in [Chau et al.](https://iopscience.iop.org/article/10.1088/1367-2630/aacde1).
 
-Concretely, the $U_7$, as the name suggests, is in the work of Chau *et al.* a seven factor approximation.
-The use of a special [trick](https://en.wikipedia.org/wiki/Baker%E2%80%93Campbell%E2%80%93Hausdorff_formula) made it possible to reduce three factors to one, making it a five factor approximation.
+Concretely, the $U_7$, as the name suggests, is in the work of Chau *et al.* a seven-factor approximation.
+The use of a special [trick](https://en.wikipedia.org/wiki/Baker%E2%80%93Campbell%E2%80%93Hausdorff_formula) made it possible to reduce three factors to one, making it a five-factor approximation.
 Because the Chau *et al.* paper is focused on quantum mechanical applicatoins, we want to sketch a more intuitive way of deriving the U7.
 
 When we want to apply $e ^A \cdot e^B \cdot e^C= e^{A+B+C}$ to operators, we remember that we must take into account that they do not commute.
 This identity thus does not hold in the general case, but we can use a series expansion, which, similar to a Taylor expansion, involves higher order derivatives. This is the approach taken in Chin's paper.
 Then cutting off the expansion leaves us with an additional error, but even though we were able to reduce the number of factors, the approximation contains an error of order $\cal{O}(t^5)$.
-Consequently, the $U_7$ is exact up to fourth order and is therefore said to be a fourth-order approximation.[^2] 
+Consequently, the $U_7$ remains exact up to fourth order and is therefore said to be a fourth-order approximation.[^2] 
 
 Either way, the newly formed term involes the second order derivative and the final $U_7$ factorization is given by
 
@@ -207,17 +207,17 @@ In Inferential Structure Determination (ISD, [Rieping et al. (2005)](https://sci
 given the prior information $I$ in the form of a coarse-grained polymer model and data $D$ from experiments, what do we know about the coordinates $x$ of the underlying biomolecular structure?
 The answer is given by the posterior distribution
 $$
-p(x|D,I) \propto p(D|x, I) \times p(x|I)
+p(x|D,I) \propto p(D|x, I) \times p(x|I),
 $$
-, which is intractable and sampling from which can thus only be achieved using MCMC methods.  
+which is intractable and sampling from which can thus only be achieved using MCMC methods.  
 
 In our case, we consider a polymer of $N=30$ spherical particles of radius $r$.
-The distances between neighboring particles are distributed normally and there is a "volume exclusion" force that makes sure particles don't overlap much.
+The distances between neighboring particles are distributed normally and there is a "volume exclusion" force that makes sure particles do not overlap much.
 We furthermore have "measured" a distance $2r$ between the first and the 6th and the first and the 26th monomer and assume the likelihood is given by a [log-normal distribution](https://en.wikipedia.org/wiki/Log-normal_distribution).  
 This setup results in a non-tractable posterior distribution over $N \times 3=90$ parameters, from which we sample using HMC with either the leapfrog or the $U_7$ integrator.  
 Drawing 10000 samples with a trajectory length of ten steps and varying time steps, we find the following results for the [effective sample size (ESS)](https://mc-stan.org/docs/2_19/reference-manual/effective-sample-size-section.html) of the log-posterior probability and the acceptance rate:
 
-![polymer.png](polymer.png)
+![polymer.png](attachment:polymer.png)
 
 We find that, just as for the 100-dimensional normal distribution, the $U_7$ HMC shows significantly increased acceptance rates as compared to the leapfrog HMC.
 The calculation of the ESS shows that for the two smallest timesteps tested, the estimated number of independent samples is much higher for the $U_7$-based HMC than for the standard implementation.
@@ -232,8 +232,8 @@ Given that, based on the ESS estimation, we can achieve much more than twice the
 
 
 ## Footnotes
-1. This algorythm in operator notation has a quite simple representation in canonical coordinates. Since $D_K^2 z = \{\{z,K\}K\} = \{(\dot  x, 0), K  \} = (0,0)$, the taylor expansion of $\exp (a D_K) $ reduces to $\Sigma_{n=0}^{\infty} \frac{(a D_K)^n}{n!} = 1+ aD_K$. This in turn makes $\exp(\beta_i t D_K)$ the mapping $$\begin{pmatrix}x \\v\end{pmatrix} \mapsto \begin{pmatrix}x + t \beta_i \frac{\partial K}{\partial v} (v)\\v\end{pmatrix}$$ and $\exp(\beta_i t D_K)$ gives $$\begin{pmatrix}x \\v\end{pmatrix} \mapsto \begin{pmatrix}x \\v - t \beta_i \frac{\partial E}{\partial x} (x)\end{pmatrix}.$$ 
-2. One interesting remark is that, for symmetric approximations, $U(t)U(-t) = 1$, the error terms can't be of even order since then, intuitively speaking, the error would point in the same direction, because $t^{2n} = (-t)^{2n}$. 
+1. This algorythm in operator notation has quite a simple representation in canonical coordinates. Since $D_K^2 z = \{\{z,K\}K\} = \{(\dot  x, 0), K  \} = (0,0)$, the taylor expansion of $\exp (a D_K) $ reduces to $\Sigma_{n=0}^{\infty} \frac{(a D_K)^n}{n!} = 1+ aD_K$. This in turn makes $\exp(\beta_i t D_K)$ the mapping $$\begin{pmatrix}x \\v\end{pmatrix} \mapsto \begin{pmatrix}x + t \beta_i \frac{\partial K}{\partial v} (v)\\v\end{pmatrix}$$ and $\exp(\beta_i t D_K)$ gives $$\begin{pmatrix}x \\v\end{pmatrix} \mapsto \begin{pmatrix}x \\v - t \beta_i \frac{\partial E}{\partial x} (x)\end{pmatrix}.$$ 
+2. One interesting remark is that, for symmetric approximations, $U(t)U(-t) = 1$, the error terms cannot be of even order since then, intuitively speaking, the error would point in the same direction, because $t^{2n} = (-t)^{2n}$. 
 
 
 <!--
