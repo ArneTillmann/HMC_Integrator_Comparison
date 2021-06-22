@@ -98,23 +98,23 @@ $$
 $$
 where 
 $$
-U_3 = \exp (\frac {1}{2}\Delta t D_E)\exp (\Delta t D_K)\exp (\frac {1}{2}\Delta t D_E).
+U_3 = \exp \left(\frac {1}{2}\Delta t D_E\right)\exp (\Delta t D_K)\exp \left(\frac {1}{2}\Delta t D_E\right).
 $$
 The coefficients are $c_1 = 0,\, c_2 = 1,\, d_1=d_2 = \frac{1}{2}.$
 
-If we further divide our time $t$ into $t =  \text{stepsize} \cdot   \text{trajectory_length}$ and apply the Suzuki approximation $U_3$ $\text{trajectory_length}$-many times, then a small function, approximating the desired behaviour for some time $t$, would have the following form:
+If we further divide our time $t$ into $t =  \text{time_step} \cdot   \text{trajectory_length}$ and apply the Suzuki approximation $U_3$ $\text{trajectory_length}$-many times, then a small function, approximating the desired behaviour for some time $t$, would have the following form:
 
 ```python
 def integrate(x, v):
 
-    v += 1./2 * stepsize * -gradient_pot_energy(x)
+    v += 1./2 * time_step * -gradient_pot_energy(x)
 
     for i in range(trajectory_length-1):
-        x += stepsize * v
-        v += stepsize * gradient_pot_energy(x)
+        x += time_step * v
+        v += time_step * gradient_pot_energy(x)
 
-    x += stepsize * v
-    v += 1./2 * stepsize * gradient_pot_energy(x)
+    x += time_step * v
+    v += 1./2 * time_step * gradient_pot_energy(x)
 
     return x, v
 ```
@@ -125,7 +125,7 @@ say $(x^\star,v^\star)$ is the exact solution after time $t$ and $(x_{t},v_{t})$
 **TODO:** discuss order of leapfrog 
 
 Now you might wonder: why look further since we have found a method yielding a reasonably exact approximation?
-After all, we can always diminish the error by shortening the stepsize and increasing the trajectory length!
+After all, we can always diminish the error by shortening the time step and increasing the trajectory length!
 
 Well, one answer is that there might be a more efficient way to approximate the equations of motions.
 But it also turns out that the Leapfrog is already not exact even for situations with a constant force $\vec F = -\nabla E = \text{const}$.
@@ -150,7 +150,7 @@ Consequently, the $U_7$ remains exact up to fourth order and is therefore said t
 
 Either way, the newly formed term involes the second order derivative and the final $U_7$ factorization is given by
 
-$$U_7 = \exp (\frac {1}{6}t D_E)\exp (\frac {1}{2}t D_K)\exp (\frac {2}{3}t D_\tilde{V})\exp ( \frac {1}{2}t D_K)\exp (\frac {1}{6}t D_E),$$
+$$U_7 = \exp \left(\frac {1}{6}t D_E\right)\exp \left(\frac {1}{2}t D_K\right)\exp \left(\frac {2}{3}t D_\tilde{V}\right)\exp \left( \frac {1}{2}t D_K\right)\exp \left(\frac {1}{6}t D_E\right),$$
 
 whereas $D_\tilde V = \{\cdot , V + \frac{1}{48}[t\nabla V ]^2\}.$ 
 
@@ -159,22 +159,22 @@ A Python implementation of the algorithm described above would look like this:
 ```python
 def integrate(x, v):
 
-    v += 1./6 * stepsize * gradient_pot_energy(x)
+    v += 1./6 * time_step * gradient_pot_energy(x)
 
     for i in range(trajectory_length-1):
-        x += 1./2 * v * stepsize
-        v += (2./3 * stepsize * (gradient_pot_energy(x)
-            + stepsize**2./24
+        x += 1./2 * v * time_step
+        v += (2./3 * time_step * (gradient_pot_energy(x)
+            + time_step**2./24
             * np.matmul(hessian_log_prog(x),gradient_pot_energy(x))))
-        x += 1./2 * v * stepsize
-        v += 1./3 * stepsize * gradient_pot_energy(x)
+        x += 1./2 * v * time_step
+        v += 1./3 * time_step * gradient_pot_energy(x)
 
-    x += 1./2 * v * stepsize
-    v += (2./3 * stepsize * (gradient_pot_energy(x)
-        + stepsize**2./24
+    x += 1./2 * v * time_step
+    v += (2./3 * time_step * (gradient_pot_energy(x)
+        + time_step**2./24
         * np.matmul(hessian_log_prog(x),gradient_pot_energy(x))))
-    x += 1./2 * v * stepsize
-    v += 1./6 * stepsize * gradient_pot_energy(x)
+    x += 1./2 * v * time_step
+    v += 1./6 * time_step * gradient_pot_energy(x)
 
     return x, v
 ```
@@ -182,7 +182,7 @@ def integrate(x, v):
 Bear in mind that the higher accuracy achieved with $U_7$ comes with a non-negligible additional computational cost, namely evalutating the gradient two times instead of one time and additionally evaluating the matrix of second derivatives. 
 
 
-## Benchmarking leapfrog and U7-based HMC
+## Benchmarking leapfrog and $U_7$-based HMC
 In [this paper](https://arxiv.org/abs/2007.05308), Jun Hao Hue *et al.* benchmark the performance of the leapfrog and $U_7$ against various classical and quantum systems, but are not concerned with their use in HMC.
 
 To compare the performance of the leapfrog and U7 integration schemes in the context of HMC, we plug above implementations into HMC and sample from two different probability distributions.
@@ -191,7 +191,7 @@ The first example is a 100-dimensional standard normal distribution.
 Because of the high symmetry of this distribution, we have to be careful to not compare apples and oranges:
 if we integrate for different total times, the trajectory might double back and we would waste computational effort (**TODO**: link or explanation).
 We thus fix the total integration time (given by `number of integration steps x time step`) to ten time units and run HMC for different combinations of time step and number of integration steps.
-If we can use a higher stepsize, we have to perform less integration steps, which means less costly gradient and Hessian evaluations.
+If we can use a higher time step, we have to perform less integration steps, which means less costly gradient and Hessian evaluations.
 
 
 ![title](Figure_2.png)
@@ -220,8 +220,8 @@ Drawing 10000 samples with a trajectory length of ten steps and varying time ste
 ![polymer.png](attachment:polymer.png)
 
 We find that, just as for the 100-dimensional normal distribution, the $U_7$ HMC shows significantly increased acceptance rates as compared to the leapfrog HMC.
-The calculation of the ESS shows that for the two smallest timesteps tested, the estimated number of independent samples is much higher for the $U_7$-based HMC than for the standard implementation.
-It is also important to note that if the acceptance rate is very low, the ESS tends to get vastly overestimated (**TODO:** remember reference), which means that also for the third timestep, the ESS obtained with standard HMC is probably somewhat lower than for the implementation with the more accurate integrator.  
+The calculation of the ESS shows that for the two smallest time steps tested, the estimated number of independent samples is much higher for the $U_7$-based HMC than for the standard implementation.
+It is also important to note that if the acceptance rate is very low, the ESS tends to get vastly overestimated (**TODO:** remember reference), which means that also for the third time step, the ESS obtained with standard HMC is probably somewhat lower than for the implementation with the more accurate integrator.  
 
 What does this mean w.r.t. to absolute performance? Remember that while the $U_7$ yields better acceptance rates and higher ESS, it also requires more computing time.
 We can estimate this additional computing time by assuming that the most expensive part during numerical integration is the evaluation of the square root in the distance calculations.
