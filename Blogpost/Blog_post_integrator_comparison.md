@@ -35,7 +35,7 @@ In fact, you can apply the splitting methods we discuss below to nonseparable Ha
 As mentioned above, the key concept of the HMC method is to simulate the fictive particle's dynamics.
 In terms of the Hamiltonian formalism, this is done by solving a set of differential equations, namely
 $$
-\frac{dx}{dt} = \frac{\partial H }{\partial v}, \hspace{15pt} \frac{dv}{dt}= -\frac{\partial H }{\partial x}.
+\frac{ 	\mathrm{d}x}{\mathrm{d}t} = \frac{\partial H }{\partial v}, \hspace{15pt} \frac{\mathrm{d}v}{\mathrm{d}t}= -\frac{\partial H }{\partial x}.
 $$
 The notation can be simplified by introducing $z=(x,v)$. Then the Hamiltonian equations of motion can be rewritten in a single expression as 
 $$
@@ -79,7 +79,7 @@ Now, that we know how to come up with an approximation of the solution of the Ha
 <!-- 
 For now, let's come back to our fictive particle. As so often the differential eqaution is actually not always analytically tractable and so we need a way to approximate the behaviour of our fictive particle. And this is where the leapfrog method comes into play. 
 --> 
-The intuition behind the Leapfrog algorithm is that we update the space coordinate $x$ and the momentum variable $v$ one after the other multiple times. This is also the behaviour which has given *Leapfrog* its name.
+The intuition behind the Leapfrog algorithm is that we update the space coordinate $x$ half a time step apart from the momentum variable $v$ one after the other multiple times. This is also the behaviour which has given the *Leapfrog* its name.
 
 ![](Leapfrog.gif)
 
@@ -122,7 +122,7 @@ def integrate(x, v):
 An important concept when talking about accuracy of integration schemes is that of the *order* of an integrator:
 say $(x^\star,v^\star)$ is the exact solution after time $t$ and $(x_{t},v_{t})$ an approximation, then we say that the approximation is of *n*th-order and write $\mathcal{O}(t^n)$, if $\Vert(x^\star,v^\star)-(x_{t},v_{t}) \Vert\leq C \cdot t^n$ and $C$ is independent of $t$.
 
-**TODO:** discuss order of leapfrog 
+One can easily verify by simple calculation that the $U_3$ is exact to first-order in $\Delta t$. Because of the symmetry, the error terms need to be of odd-order.[^2]  Thus the $U_3$ is also correct up to $\Delta t ^2$ and ideed, the leading error is of third-order. In this sense, the $U_3$ is a second-order approximation and the Leapfrog too. 
 
 Now you might wonder: why look further since we have found a method yielding a reasonably exact approximation?
 After all, we can always diminish the error by shortening the time step and increasing the trajectory length!
@@ -140,13 +140,13 @@ The novelty of the $U_7$ consists of the usage of the second-order derivative of
 The $U_7$ approximation was first discovered by [Chin (1997)](https://www.sciencedirect.com/science/article/abs/pii/S0375960197000030), but later independently obtained through an entirely different approach in [Chau et al.](https://iopscience.iop.org/article/10.1088/1367-2630/aacde1).
 
 Concretely, the $U_7$, as the name suggests, is in the work of Chau *et al.* a seven-factor approximation.
-The use of a special [trick](https://en.wikipedia.org/wiki/Baker%E2%80%93Campbell%E2%80%93Hausdorff_formula) made it possible to reduce three factors to one, making it a five-factor approximation.
+The use of a special [trick](https://en.wikipedia.org/wiki/Baker%E2%80%93Campbell%E2%80%93Hausdorff_formula) made it possible to reduce three factors to one, making it a five-factor approximation.[^3]
 Because the Chau *et al.* paper is focused on quantum mechanical applicatoins, we want to sketch a more intuitive way of deriving the U7.
 
 When we want to apply $e ^A \cdot e^B \cdot e^C= e^{A+B+C}$ to operators, we remember that we must take into account that they do not commute.
 This identity thus does not hold in the general case, but we can use a series expansion, which, similar to a Taylor expansion, involves higher order derivatives. This is the approach taken in Chin's paper.
 Then cutting off the expansion leaves us with an additional error, but even though we were able to reduce the number of factors, the approximation contains an error of order $\cal{O}(t^5)$.
-Consequently, the $U_7$ remains exact up to fourth order and is therefore said to be a fourth-order approximation.[^2] 
+Consequently, the $U_7$ remains exact up to fourth order and is therefore said to be a fourth-order approximation.
 
 Either way, the newly formed term involes the second order derivative and the final $U_7$ factorization is given by
 
@@ -232,8 +232,20 @@ Given that, based on the ESS estimation, we can achieve much more than twice the
 
 
 ## Footnotes
-1. This algorithm in operator notation has quite a simple representation in canonical coordinates. Since $D_K^2 z = \{\{z,K\}K\} = \{(\dot  x, 0), K  \} = (0,0)$, the taylor expansion of $\exp (a D_K) $ reduces to $\Sigma_{n=0}^{\infty} \frac{(a D_K)^n}{n!} = 1+ aD_K$. This in turn makes $\exp(\beta_i t D_K)$ the mapping $$\begin{pmatrix}x \\v\end{pmatrix} \mapsto \begin{pmatrix}x + t \beta_i \frac{\partial K}{\partial v} (v)\\v\end{pmatrix}$$ and $\exp(\beta_i t D_K)$ gives $$\begin{pmatrix}x \\v\end{pmatrix} \mapsto \begin{pmatrix}x \\v - t \beta_i \frac{\partial E}{\partial x} (x)\end{pmatrix}.$$ 
+1. This algorithm in operator notation has quite a simple representation in canonical coordinates. Since $D_K^2 z = \{\{z,K\}K\} = \{(\dot  x, 0), K  \} = (0,0)$, the taylor expansion of $\exp (a D_K) $ reduces to $\Sigma_{n=0}^{\infty} \frac{(a D_K)^n}{n!} = 1+ aD_K$. This in turn makes $\exp(\beta_i t D_K)$ the mapping 
+$$
+\begin{pmatrix}x \\v\end{pmatrix} \mapsto \begin{pmatrix}x + t \beta_i \frac{\partial K}{\partial v} (v)\\v\end{pmatrix}
+$$
+and $\exp(\beta_i t D_K)$ gives 
+$$
+\begin{pmatrix}x \\v\end{pmatrix} \mapsto \begin{pmatrix}x \\v - t \beta_i \frac{\partial E}{\partial x} (x)\end{pmatrix}.
+$$ 
 2. One interesting remark is that, for symmetric approximations, $U(t)U(-t) = 1$, the error terms cannot be of even order since then, intuitively speaking, the error would point in the same direction, because $t^{2n} = (-t)^{2n}$. 
+3. I want to explain more rigorously how the second derivative comes into play. The Baker-Campbell-Hausdorff formula is the solution $Z$ to the equation $e^Xe^Y=e^Z$. The first terms of this series are: 
+$$
+Z = X+Y + \frac{1}{2}\{X,Y\}+\frac{1}{12}\{X,\{X,Y\}\}-\frac{1}{12}\{Y,\{X,Y\}\}+\cdots,
+$$ 
+where "$\cdots$" indicates terms involving higher commutators. Furthermore, we notice that nesting the Poisson bracket implies the usage of higher order derivatives, because the Poisson bracket is a differentail operator. 
 
 
 <!--
