@@ -13,7 +13,7 @@ jupyter:
 ---
 
 # A more accurate integrator for HMC
-Hamiltonian Monte Carlo (HMC) (TODO: link) is a very popular MCMC sampling algorithm, which crucially depends on an integration scheme to approximate Hamiltonian's equations of motion.  
+Hamiltonian Monte Carlo [HMC](https://www.tweag.io/blog/2019-10-25-mcmc-intro1/] is a very popular MCMC sampling algorithm, which crucially depends on an integration scheme to approximate Hamiltonian's equations of motion.  
 In this blog post, we will learn more about integration schemes and discuss two different integrators:
 The first one is the classical leapfrog, which is the standard method to generate new proposal states for HMC. The second integration scheme is the $U_7$, which is more accurate, but also computationally more expensive.  
 
