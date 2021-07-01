@@ -4,8 +4,8 @@ jupyter:
     text_representation:
       extension: .md
       format_name: markdown
-      format_version: '1.2'
-      jupytext_version: 1.7.1
+      format_version: '1.3'
+      jupytext_version: 1.11.2
   kernelspec:
     display_name: Python 3
     language: python
@@ -79,9 +79,11 @@ Now, that we know how to come up with an approximation of the solution of the Ha
 <!-- 
 For now, let's come back to our fictive particle. As so often the differential eqaution is actually not always analytically tractable and so we need a way to approximate the behaviour of our fictive particle. And this is where the leapfrog method comes into play. 
 --> 
-The intuition behind the Leapfrog algorithm is that we update the space coordinate $x$ half a time step apart from the momentum variable $v$ one after the other multiple times. This behaviour has given the *Leapfrog* algorithm its name. **TODO:** name source for this image
+
+The intuition behind the Leapfrog algorithm is that we update the space coordinate $x$ half a time step apart from the momentum variable $v$ one after the other multiple times. This behaviour has given the *Leapfrog* algorithm its name.
 
 ![](Leapfrog.gif)
+(source: [drecel.edu](http://einstein.drexel.edu/courses/Comp_Phys/Integrators/leapfrog/leapfrog.gif))
 
 More rigorously, the updates look like the following,
 $$
@@ -122,7 +124,9 @@ def integrate(x, v):
 An important concept when talking about accuracy of integration schemes is that of the *order* of an integrator:
 say $(x^\star,v^\star)$ is the exact solution after time $t$ and $(x_{t},v_{t})$ an approximation, then we say that the approximation is of *n*th-order and write $\mathcal{O}(t^n)$, if $\Vert(x^\star,v^\star)-(x_{t},v_{t}) \Vert\leq C \cdot t^n$ and $C$ is independent of $t$.
 
+
 One can easily verify by simple calculation (**TODO:** make a footnote quickly sketching how this works) that the $U_3$ is exact to first-order in $\Delta t$. Because of the symmetry, the error terms need to be of odd-order.[^2]  Thus (**TODO:** thus means that what comes now follows from the previous sentence, but this is not true. Order 1 is an odd order, so this is no reason that leapfrog should be second order) the $U_3$ is also correct up to $\Delta t ^2$ and ideed, the leading error is of third-order. In this sense, the $U_3$ is a second-order approximation and the Leapfrog too. **TODO:** here it sounds likle leapfrog and $U_3$ are two different things? 
+
 
 Now you might wonder: why look further since we have found a method yielding a reasonably exact approximation?
 After all, we can always diminish the error by shortening the time step and increasing the trajectory length!
@@ -140,12 +144,14 @@ The novelty of the $U_7$ consists of the usage of the second-order derivative of
 The $U_7$ approximation was first discovered by [Chin (1997)](https://www.sciencedirect.com/science/article/abs/pii/S0375960197000030), but later independently obtained through an entirely different approach in [Chau et al.](https://iopscience.iop.org/article/10.1088/1367-2630/aacde1).
 
 Concretely, the $U_7$, as the name suggests, is in the work of Chau *et al.* a seven-factor approximation.
+
 The use of a special [trick](https://en.wikipedia.org/wiki/Baker%E2%80%93Campbell%E2%80%93Hausdorff_formula) makes it possible to reduce three factors to one, making it a five-factor approximation.[^3]
 Because the Chau *et al.* paper is focused on quantum mechanical applications, we want to sketch a more intuitive way of deriving the U7.
 
 When we want to apply $e ^A \cdot e^B \cdot e^C= e^{A+B+C}$ to operators, we remember that we must take into account that they do not commute.
 This identity thus does not hold in the general case, but we can use a series expansion, which, similar to a Taylor expansion, involves higher order derivatives. This is the approach taken in Chin's paper.
 Then, cutting off the expansion leaves us with an additional error, but even though we were able to reduce the number of factors, the approximation contains an error of order $\cal{O}(t^5)$.
+
 Consequently, the $U_7$ remains exact up to fourth order and is therefore said to be a fourth-order approximation.
 
 Either way, the newly formed term involes the second order derivative and the final $U_7$ factorization is given by
@@ -240,6 +246,7 @@ and $\exp(\beta_i t D_K)$ gives
 $$
 \begin{pmatrix}x \\v\end{pmatrix} \mapsto \begin{pmatrix}x \\v - t \beta_i \frac{\partial E}{\partial x} (x)\end{pmatrix}.
 $$ 
+
 2. One interesting remark is that, for symmetric approximations, $U(t)U(-t) = 1$, the error terms cannot be of even order since then, intuitively speaking, the error would point in the same direction, because $t^{2n} = (-t)^{2n}$. **TODO:** clarify this foot note. What is $U(t)$? Perhaps add that the error cancels out in $U(-t)U(t)$.
 3. Here's how the second derivative comes into play. The Baker-Campbell-Hausdorff formula is a representation of solution $Z$ to the equation $e^Xe^Y=e^Z$ in terms of a series. The first terms of this series are: 
 $$
