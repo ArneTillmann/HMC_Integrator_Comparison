@@ -84,7 +84,7 @@ The intuition behind the Leapfrog algorithm is that we update the space coordina
 
 ![](Leapfrog.gif)
 
-(source: [drecel.edu](http://einstein.drexel.edu/courses/Comp_Phys/Integrators/leapfrog/leapfrog.gif))
+(source: [drecel.edu](http://www.physics.drexel.edu/~steve/Courses/Comp_Phys/Integrators/leapfrog))
 
 More rigorously, the updates look like the following,
 $$
