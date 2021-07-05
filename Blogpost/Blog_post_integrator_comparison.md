@@ -4,8 +4,8 @@ jupyter:
     text_representation:
       extension: .md
       format_name: markdown
-      format_version: '1.3'
-      jupytext_version: 1.11.2
+      format_version: '1.2'
+      jupytext_version: 1.7.1
   kernelspec:
     display_name: Python 3
     language: python
@@ -13,38 +13,38 @@ jupyter:
 ---
 
 # A more accurate integrator for HMC
-Hamiltonian Monte Carlo [HMC](https://www.tweag.io/blog/2019-10-25-mcmc-intro1/] is a very popular MCMC sampling algorithm, which crucially depends on an integration scheme to approximate Hamiltonian's equations of motion.  
-In this blog post, we will learn more about integration schemes and discuss two different integrators:
+Hamiltonian Monte Carlo [HMC](https://www.tweag.io/blog/2020-08-06-mcmc-intro3/) is a very popular MCMC sampling algorithm, which crucially depends on an integration scheme to approximate Hamiltonian's equations of motion.  
+In this blog post we will learn more about integration schemes and discuss two different integrators:
 The first one is the classical leapfrog, which is the standard method to generate new proposal states for HMC. The second integration scheme is the $U_7$, which is more accurate, but also computationally more expensive.  
 
-In this blog post, we will first remind you of the basic idea of HMC and then expose you to some classical menchanics.
+We will first remind you of the basic idea of HMC and then expose you to some required classical mechanics.
 With these foundations set, we formally describe the two integrators and then tentatively compare the performance of corresponding HMC implementations.
 In case you are new to HMC or MCMC methods, a good starting point might be Tweag's [blog post series](https://www.tweag.io/blog/2019-10-25-mcmc-intro1/). 
 
 
 # Introduction
-Broadly speaking the idea of HMC is that given a previous state $x$ of our Markov chain, we draw a random momentum $v$ from a normal distribution and simulate the behaviour of a fictive particle with starting point $(x,v)$.
+Broadly speaking, the idea of HMC is that, given a previous state $x$ of our Markov chain, we draw a random momentum $v$ from a normal distribution and simulate the behaviour of a fictive particle with starting point $(x,v)$.
 This intuition makes sense, because our probability density gives rise to a potential energy and vice versa (see, for example, [Tweag's HMC blog post](https://www.tweag.io/blog/2020-08-06-mcmc-intro3/)).
 This deterministic behaviour is simulated for some fixed time $t$.
-The final state $(x^\star, v^\star)$ of the particle after some time t will then serve as the new proposal state of a Metropolis-Hastings algorithm.
+The final state $(x^\star, v^\star)$ of the particle after the time $t$ will then serve as the new proposal state of a Metropolis-Hastings algorithm.
 
 The motion of the fictive particle are governed by the Hamiltonian $$H(x,v) = K(v) + E(x).$$
 Technically, the Hamiltonian does not necessarily need to be of the form "kinetic energy plus potential energy", meaning "separable", but it is in the most popular HMC implementations and it makes things a lot easier.
-In fact, you can apply the splitting methods we discuss below to nonseparable Hamiltonians as well. 
+In fact, you can apply the splitting methods we discuss below to non-separable Hamiltonians as well. 
 
 As mentioned above, the key concept of the HMC method is to simulate the fictive particle's dynamics.
 In terms of the Hamiltonian formalism, this is done by solving a set of differential equations, namely
 $$
 \frac{ 	\mathrm{d}x}{\mathrm{d}t} = \frac{\partial H }{\partial v}, \hspace{15pt} \frac{\mathrm{d}v}{\mathrm{d}t}= -\frac{\partial H }{\partial x}.
 $$
-The notation can be simplified by introducing $z=(x,v)$. Then the Hamiltonian equations of motion can be rewritten in a single expression as 
+The notation can be simplified by introducing $z=(x,v)$. These (*Hamilton's*) equations of motion can then be rewritten in a single expression as 
 $$
 \dot{z} = \begin{pmatrix}\dot x \\ \dot v\end{pmatrix} = \begin{pmatrix}\frac{\partial H }{\partial v} \\ -\frac{\partial H }{\partial x}\end{pmatrix} = \{z,H(z)\}
 $$
 where $\{\cdot, \cdot \}$ is the [Poisson bracket](https://en.wikipedia.org/wiki/Poisson_bracket).
 The Poisson bracket is a differential operator of first order, which means that it uses first derivatives.
-It essentially describes the change of any observable quantity with respect to the time evolution of a Hamiltonian system.
-Furthermore, by introducing an operator $D_{H\cdot} = \{ \cdot, H \}$, the equation can be further simplified to 
+It essentially describes the change of any observable quantity with respect to the time evolution of system evolving according to Hamilton's equations of motion.
+By introducing an operator $D_{H\cdot} = \{ \cdot, H \}$, the equation can be further simplified to 
 $$
 \dot z = D_H z
 $$
@@ -52,39 +52,36 @@ and is formally solved by
 $$
 z(t) = \exp ( t D_H) z(0) = \exp ( t(D_K + D_E)) z(0).
 $$ 
-Note that $D_K$ and $D_E$ stand respectively for the operators $\{ \cdot, K \}$ and $\{ \cdot, E \}.$
+Note that $D_K$ and $D_E$ stand respectively for the operators $\{ \cdot, K \}$ and $\{ \cdot, E \}$.
 The solution depends crucially on the potential energy, which in turn relates to the probability distribution of interest.
-The latter in general is of non-standard form and the above solution to the Hamiltonian equations of motion can therefore not be obtained analytically. 
+The latter in general is non-trivial and the above solution to the Hamiltonian equations of motion can therefore not be obtained analytically. 
 
 
 ## A general recipe for symplectic integration: splitting methods
 Because analytical solutions to the equations of motions are usually not available, we have to resort to numerical integration to get at least an approximate solution.
-As discussed in a footnote of [Tweag's HMC blog post](https://www.tweag.io/blog/2020-08-06-mcmc-intro3/), we can't just use any integratoin scheme in HMC, but we should rather make sure it maintains [*symplecticity*](https://en.wikipedia.org/wiki/Symplectic_integrator#A_fourth-order_example), a crucial property of Hamilton's equations of motion.
+As discussed in a footnote of [Tweag's HMC blog post](https://www.tweag.io/blog/2020-08-06-mcmc-intro3/), we can't just use any integration scheme in HMC, but we should rather make sure it maintains [*symplecticity*](https://en.wikipedia.org/wiki/Symplectic_integrator#A_fourth-order_example), a crucial property of Hamilton's equations of motion.
 A very general idea way of deriving symplectic integrator of arbitrary order are splitting methods, which we are presenting now.
 
 
-In 1995 [Suzuki](http://people.ucalgary.ca/~dfeder/535/suzuki.pdf) proposed a new way to approximate expressions such as the solution of the Hamiltonian equations,
+In 1995 [Suzuki](http://people.ucalgary.ca/~dfeder/535/suzuki.pdf) proposed a new way to approximate expressions such as the formal solution of Hamilton's equations,
 $$
 \exp ( t(D_K + D_E)) = \prod_{i=1}^{k/2} \exp (c_i t D_K) \exp (d_i t D_E) + \cal{O}(t^{k+1}),
 $$
-where $\Sigma_{i=1}^k c_i = \Sigma_{i=1}^k d_i =1.$ You can think of this formula as a generalization of the identity $e^{m+n} = e ^m \cdot e^n.$ The error term is a result of the fact that operators (here represented as matrices) generally do not commute. 
+where $\Sigma_{i=1}^k c_i = \Sigma_{i=1}^k d_i =1$.
+You can think of this formula as a generalization of the identity $e^{m+n} = e ^m \cdot e^n$.
+The error term is a result of the fact that operators (here represented as matrices) generally do not commute. 
 
-Each of the factors $\exp (c_i t D_K)$ will correspond to an update of the state $x$ and similarly $\exp (d_i t D_E)$ can be translated to an update of the momentum $v.$ [^1]
+Each of the factors $\exp (c_i t D_K)$ can be shown to correspond to an update of the position $x$ and similarly $\exp (d_i t D_E)$ can be translated to an update of the momentum $v$.[^1]
 
-Now, that we know how to come up with an approximation of the solution of the Hamiltonian equations, lets give a first example of one approximative algorithm:
+Now, that we know how to come up with an approximation of the solution of the equations of motion, lets give a first example of an approximative algorithm.
 
 
 ## The Leapfrog
-
-<!-- 
-For now, let's come back to our fictive particle. As so often the differential eqaution is actually not always analytically tractable and so we need a way to approximate the behaviour of our fictive particle. And this is where the leapfrog method comes into play. 
---> 
-
-The intuition behind the Leapfrog algorithm is that we update the space coordinate $x$ half a time step apart from the momentum variable $v$ one after the other multiple times. This behaviour has given the *Leapfrog* algorithm its name.
+The intuition behind the Leapfrog algorithm is that we update the position coordinate $x$ half a time step apart from the momentum variable $v$ one after the other multiple times. This behaviour has given the *Leapfrog* algorithm its name.
 
 ![](Leapfrog.gif)
 
-(source: [drecel.edu](http://www.physics.drexel.edu/~steve/Courses/Comp_Phys/Integrators/leapfrog))
+(source: [Steve McMillan, Drexel University](http://www.physics.drexel.edu/~steve/Courses/Comp_Phys/Integrators/leapfrog))
 
 More rigorously, the updates look like the following,
 $$
@@ -123,10 +120,13 @@ def integrate(x, v):
 ```
 
 An important concept when talking about accuracy of integration schemes is that of the *order* of an integrator:
-say $(x^\star,v^\star)$ is the exact solution after time $t$ and $(x_{t},v_{t})$ an approximation, then we say that the approximation is of *n*th-order and write $\mathcal{O}(t^n)$, if $\Vert(x^\star,v^\star)-(x_{t},v_{t}) \Vert\leq C \cdot t^n$ and $C$ is independent of $t$.
+if $(x^\star,v^\star)$ is the exact solution after time $t$ and $(x_{t},v_{t})$ an approximation, then we say that the approximation is of *n*th-order and write $\mathcal{O}(t^n)$, if $\Vert(x^\star,v^\star)-(x_{t},v_{t}) \Vert\leq C \cdot t^n$ and $C$ is independent of $t$.
 
 
-One can easily verify by simple calculation that the $U_3$ is exact to first-order in $\Delta t$.[^2] Because of the symmetry, the error terms need to be of odd-order.[^3]  Thus the $U_3$ is also correct up to $\Delta t ^2$ and ideed, the leading error is of third-order. In this sense, the $U_3$ is a second-order approximation and the Leapfrog too.
+One can easily verify by simple calculation that the $U_3$ is exact to first-order in $\Delta t$.[^2]
+Because of the symmetry, the error terms need to be of odd-order.[^3]
+Thus the $U_3$ is also correct up to $\Delta t ^2$ (**TODO:** this does not follow logically) and ideed, the leading error is of third-order.
+In this sense, the $U_3$ is a second-order approximation and the Leapfrog is, too.
 
 
 Now you might wonder: why look further since we have found a method yielding a reasonably exact approximation?
@@ -141,25 +141,22 @@ And to get rid of those, they propose the...
 
 ## The $U_7$
 The novelty of the $U_7$ consists of the usage of the second-order derivative of the potential energy. This comes along with a few more updates of $x$ and $v$ per step and yields a lower error. 
-
-The $U_7$ approximation was first discovered by [Chin (1997)](https://www.sciencedirect.com/science/article/abs/pii/S0375960197000030), but later independently obtained through an entirely different approach in [Chau et al.](https://iopscience.iop.org/article/10.1088/1367-2630/aacde1).
-
-Concretely, the $U_7$, as the name suggests, is in the work of Chau *et al.* a seven-factor approximation.
-
+The $U_7$ approximation was first discovered by [Chin (1997)](https://www.sciencedirect.com/science/article/abs/pii/S0375960197000030), but later independently obtained through an entirely different approach in [Chau et al.](https://iopscience.iop.org/article/10.1088/1367-2630/aacde1).  
+It is, as the name suggests, is, in the work of Chau *et al.*, a seven-factor approximation.
 The use of a special [trick](https://en.wikipedia.org/wiki/Baker%E2%80%93Campbell%E2%80%93Hausdorff_formula) makes it possible to reduce three factors to one, making it a five-factor approximation.[^4]
-Because the Chau *et al.* paper is focused on quantum mechanical applications, we want to sketch a more intuitive way of deriving the U7.
+Because the Chau *et al.* paper is focused on quantum mechanical applications, we want to sketch a more intuitive way of deriving the $U_7$.
 
 When we want to apply $e ^A \cdot e^B \cdot e^C= e^{A+B+C}$ to operators, we remember that we must take into account that they do not commute.
-This identity thus does not hold in the general case, but we can use a series expansion, which, similar to a Taylor expansion, involves higher order derivatives. This is the approach taken in Chin's paper.
-Then, cutting off the expansion leaves us with an additional error, but even though we were able to reduce the number of factors, the approximation contains an error of order $\cal{O}(t^5)$.
-
+This identity thus does not hold in the general case, but we can use a series expansion, which, similar to a Taylor expansion, involves higher order derivatives.
+This is the approach taken in Chin's paper.
+Then, cutting off the expansion leaves us with an additional error, but even though we were able to reduce the number of factors, the approximation contains an error of order $\cal{O}(\Delta t^5)$.
 Consequently, the $U_7$ remains exact up to fourth order and is therefore said to be a fourth-order approximation.
 
-Either way, the newly formed term involes the second order derivative and the final $U_7$ factorization is given by
+Whichever way the $U_7$ is derived, the newly formed term involes the second order derivative and the final $U_7$ factorization is given by
 
-$$U_7 = \exp \left(\frac {1}{6}t D_E\right)\exp \left(\frac {1}{2}t D_K\right)\exp \left(\frac {2}{3}t D_\tilde{V}\right)\exp \left( \frac {1}{2}t D_K\right)\exp \left(\frac {1}{6}t D_E\right),$$
+$$U_7 = \exp \left(\frac {1}{6}\Delta t D_E\right)\exp \left(\frac {1}{2}\Delta t D_K\right)\exp \left(\frac {2}{3}\Delta t D_\tilde{V}\right)\exp \left( \frac {1}{2}\Delta t D_K\right)\exp \left(\frac {1}{6}\Delta t D_E\right),$$
 
-whereas $D_\tilde V = \{\cdot , V + \frac{1}{48}[t\nabla V ]^2\}.$ 
+whereas $D_\tilde V = \{\cdot , V + \frac{1}{48}[\Delta t\nabla V ]^2\}.$ 
 
 A Python implementation of the algorithm described above would look like this:
 
@@ -239,17 +236,17 @@ Given that, based on the ESS estimation, we can achieve much more than twice the
 
 
 ## Footnotes
-1. This algorithm in operator notation has quite a simple representation in canonical coordinates. Since $D_K^2 z = \{\{z,K\}K\} = \{(\dot  x, 0), K  \} = (0,0)$, the taylor expansion of $\exp (a D_K) $ reduces to $\Sigma_{n=0}^{\infty} \frac{(a D_K)^n}{n!} = 1+ aD_K$. This in turn makes $\exp(\beta_i t D_K)$ the mapping 
+1. This algorithm in operator notation has quite a simple coordinate representation. Since $D_K^2 z = \{\{z,K\}K\} = \{(\dot  x, 0), K  \} = (0,0)$, the taylor expansion of $\exp (a D_K) $ reduces to $\Sigma_{n=0}^{\infty} \frac{(a D_K)^n}{n!} = 1+ aD_K$. This in turn makes $\exp(\beta_i \Delta t D_K)$ the mapping 
 $$
-\begin{pmatrix}x \\v\end{pmatrix} \mapsto \begin{pmatrix}x + t \beta_i \frac{\partial K}{\partial v} (v)\\v\end{pmatrix}
+\begin{pmatrix}x \\v\end{pmatrix} \mapsto \begin{pmatrix}x + \Delta t \beta_i \frac{\partial K}{\partial v} (v)\\v\end{pmatrix}
 $$
-and $\exp(\beta_i t D_K)$ gives 
+and $\exp(\beta_i \Delta t D_K)$ gives 
 $$
-\begin{pmatrix}x \\v\end{pmatrix} \mapsto \begin{pmatrix}x \\v - t \beta_i \frac{\partial E}{\partial x} (x)\end{pmatrix}.
+\begin{pmatrix}x \\v\end{pmatrix} \mapsto \begin{pmatrix}x \\v - \Delta t \beta_i \frac{\partial E}{\partial x} (x)\end{pmatrix}.
 $$ 
-2. Just use the definition from above $\Vert(x^\star,v^\star)-(x_{t},v_{t}) \Vert\leq C \cdot t^n$, plug in the definitions for $(x^\star,v^\star)$, $(x_{t},v_{t})$ and the series definition of the exponential function. Then, when multiplying the serieses, it is suffiecient to consider only the summands, that multiply up to an $t$-order of one and you be able to find a $C$ such that $\Vert(x^\star,v^\star)-(x_{t},v_{t}) \Vert\leq C \cdot t$. You should bear in mind, that operators do not necessarily commute.
-3. One interesting remark is that, for symmetric approximations, $U(t)U(-t) = 1$, the error terms cannot be of even order since then, intuitively speaking, the error would point in the same direction, because $t^{2n} = (-t)^{2n}$. $U(t)$ is the time evolution operator in this case and since we only consider time independet systems, $U(t)$ is symmetric in time, leaving no error behind when applied like this $U(t)U(-t)$.
-4. Here's how the second derivative comes into play. The Baker-Campbell-Hausdorff formula is a representation of solution $Z$ to the equation $e^Xe^Y=e^Z$ in terms of a series. The first terms of this series are: 
+2. Just use the definition from above $\Vert(x^\star,v^\star)-(x_{t},v_{t}) \Vert\leq C \cdot t^n$, plug in the definitions for $(x^\star,v^\star)$, $(x_{t},v_{t})$ and the series definition of the exponential function. Then, when multiplying the series, it is sufficient to consider only the summands that multiply up to an $t$-order of one and you should be able to find a $C$ such that $\Vert(x^\star,v^\star)-(x_{t},v_{t}) \Vert\leq C \cdot t$. Bear in mind that operators in general do not commute.
+3. One interesting remark is that, for symmetric approximations, $U(t)U(-t) = 1$, the error terms cannot be of even order since then, intuitively speaking, the error would point in the same direction, because $t^{2n} = (-t)^{2n}$. $U(t)$ is the time evolution operator and since we only consider time independent systems, $U(t)$ is symmetric in time, leaving no error behind when the product $U(t)U(-t)$ is applied.
+4. Here's how the second derivative comes into play: The Baker-Campbell-Hausdorff formula is a representation of solution $Z$ to the equation $e^Xe^Y=e^Z$ in terms of a series. The first terms of this series are: 
 $$
 Z = X+Y + \frac{1}{2}[X,Y]+\frac{1}{12}[X,[X,Y]]-\frac{1}{12}[Y,[X,Y]]+\cdots,
 $$ 
