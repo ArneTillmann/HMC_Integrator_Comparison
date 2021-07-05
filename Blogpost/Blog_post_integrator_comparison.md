@@ -136,7 +136,7 @@ Well, one answer is that there might be a more efficient way to approximate the 
 But it also turns out that the Leapfrog is already not exact even for situations with a constant force $\vec F = -\nabla E = \text{const}$.
 This is exactly why, originally, a five-factor approximation was considered by [Chau et al.](https://iopscience.iop.org/article/10.1088/1367-2630/aacde1/pdf).
 Unfortunately, this approximation has still error terms of third order.
-And to get rid of those, they propose the...
+And to get rid of those, they propose...
 
 
 ## The $U_7$
@@ -193,16 +193,18 @@ To compare the performance of the leapfrog and U7 integration schemes in the con
 
 The first example is a 100-dimensional standard normal distribution.
 Because of the high symmetry of this distribution, we have to be careful to not compare apples and oranges:
-if we integrate for different total times, the trajectory might double back and we would waste computational effort (**TODO**: link or explanation).
+if we integrate for different total times, the trajectory might double back and we would waste computational effort -- avoiding this is the goal of a widely popular HMC variant called [NUTS](https://arxiv.org/abs/1111.4246).
 We thus fix the total integration time (given by `number of integration steps x time step`) to ten time units and run HMC for different combinations of time step and number of integration steps.
 If we can use a higher time step, we have to perform less integration steps, which means less costly gradient and Hessian evaluations.
 
 
-![title](Figure_2.png)
+![title](normal.png)
 
 
 We find indeed that the acceptance rate stays almost constant at almost one for a wide range of time steps, while the HMC implementation based on the leapfrog integration scheme shows rapidly diminishing acceptance rates.
-This confirms that we have implemented the U7 integrator correctly and makes us even more excited to test it on a "real" system!
+We currently cannot explain the local maximum in the Leapfrog acceptance rate around a stepsize of $1.5$, but we suspect it has to do with high symmetry of the normal distribution -- perhaps the Leapfrog is, for that stepsize / trajectory length combination performing an additional U-turn that makes it double back towards more likely states.
+In any case, this confirms that we have implemented the U7 integrator correctly and makes us even more excited to test it on a "real" system!
+
 
 As a more practical application, we consider a simple, coarse-grained polymer model of a biomolecule, for example, a protein or DNA.
 In biomolecular structure determination, one seeks to infer the coordinates of atoms or coarse-grained modeling units (*monomers*) of a polymer model from data obtained from biophysical experiments.
@@ -215,17 +217,18 @@ p(x|D,I) \propto p(D|x, I) \times p(x|I),
 $$
 which is intractable and sampling from which can thus only be achieved using MCMC methods.  
 
-In our case, we consider a polymer of $N=30$ spherical particles of radius $r$.
+In our case, we consider a polymer of $N=30$ spherical particles.
 The distances between neighboring particles are distributed normally and there is a "volume exclusion" force that makes sure particles do not overlap much.
-We furthermore have "measured" a distance $2r$ between the first and the 6th and the first and the 26th monomer and assume the likelihood is given by a [log-normal distribution](https://en.wikipedia.org/wiki/Log-normal_distribution).  
+We furthermore assume that, for two particle pairs, we have "measured" their distance and assume the likelihood for this measurement to be given by a [log-normal distribution](https://en.wikipedia.org/wiki/Log-normal_distribution).  
 This setup results in a non-tractable posterior distribution over $N \times 3=90$ parameters, from which we sample using HMC with either the leapfrog or the $U_7$ integrator.  
 Drawing 10000 samples with a trajectory length of ten steps and varying time steps, we find the following results for the [effective sample size (ESS)](https://mc-stan.org/docs/2_19/reference-manual/effective-sample-size-section.html) of the log-posterior probability and the acceptance rate:
 
-![polymer.png](attachment:polymer.png)
+![title](polymer.png)
 
 We find that, just as for the 100-dimensional normal distribution, the $U_7$ HMC shows significantly increased acceptance rates as compared to the leapfrog HMC.
 The calculation of the ESS shows that for the two smallest time steps tested, the estimated number of independent samples is much higher for the $U_7$-based HMC than for the standard implementation.
-It is also important to note that if the acceptance rate is very low, the ESS tends to get vastly overestimated (**TODO:** remember reference), which means that also for the third time step, the ESS obtained with standard HMC is probably somewhat lower than for the implementation with the more accurate integrator.  
+It is also important to note that in our experiments, if the acceptance rate got very low, the ESS increaseas very sharply and is likely vastly overestimated, which is very counterintuitive and most certainly a result of the bad statistics obtained at very low acceptance rates.
+We do not show these surely erroneous data points and we can suspect that also for the third time step, the ESS obtained with standard HMC is probably somewhat lower than for the implementation with the more accurate integrator.  
 
 What does this mean w.r.t. to absolute performance? Remember that while the $U_7$ yields better acceptance rates and higher ESS, it also requires more computing time.
 We can estimate this additional computing time by assuming that the most expensive part during numerical integration is the evaluation of the square root in the distance calculations.
