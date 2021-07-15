@@ -4,8 +4,8 @@ jupyter:
     text_representation:
       extension: .md
       format_name: markdown
-      format_version: '1.2'
-      jupytext_version: 1.7.1
+      format_version: '1.3'
+      jupytext_version: 1.11.2
   kernelspec:
     display_name: Python 3
     language: python
@@ -123,10 +123,7 @@ An important concept when talking about accuracy of integration schemes is that 
 if $(x^\star,v^\star)$ is the exact solution after time $t$ and $(x_{t},v_{t})$ an approximation, then we say that the approximation is of *n*th-order and write $\mathcal{O}(t^n)$, if $\Vert(x^\star,v^\star)-(x_{t},v_{t}) \Vert\leq C \cdot t^n$ and $C$ is independent of $t$.
 
 
-One can easily verify by simple calculation that the $U_3$ is exact to first-order in $\Delta t$.[^2]
-Because of the symmetry, the error terms need to be of odd-order.[^3]
-Thus the $U_3$ is also correct up to $\Delta t ^2$ (**TODO:** this does not follow logically) and ideed, the leading error is of third-order.
-In this sense, the $U_3$ is a second-order approximation and the Leapfrog is, too.
+One can easily verify by simple calculation that the $U_3$ is exact to first-order in $\Delta t$.[^2] Furthermore, because of the symmetry, the $U_3$ need to be of even-order.[^3] Thus the $U_3$ cannot be only a first-order approximation. The $U_3$ needs to be correct up to $\Delta t ^2$. In this sense, the $U_3$ is a second-order approximation and the Leapfrog too.
 
 
 Now you might wonder: why look further since we have found a method yielding a reasonably exact approximation?
@@ -238,34 +235,13 @@ We can thus estimate that the computational effort for a $U_7$ iteration is appr
 Given that, based on the ESS estimation, we can achieve much more than twice the number of independent samples with $U_7$, we can conclude that the $U_7$ integrator indeed is a very promising way to boost HMC performance.
 
 
+## Conclusion
+I hope, that you have gained a deeper understanding of the numerics behind Hamiltonian mechanics. Certainly, this is still an current field of research and especially its applications outside physics are just beeing explored. So we can expect future results on different integrator sheems. To put it in a nutshell, we have seen that HMC does not need to rely only on the Leapfrog and may even be better of with the $U_7$.
+
+
 ## Footnotes
-1. This algorithm in operator notation has quite a simple coordinate representation. Since $D_K^2 z = \{\{z,K\}K\} = \{(\dot  x, 0), K  \} = (0,0)$, the taylor expansion of $\exp (a D_K) $ reduces to $\Sigma_{n=0}^{\infty} \frac{(a D_K)^n}{n!} = 1+ aD_K$. This in turn makes $\exp(\beta_i \Delta t D_K)$ the mapping 
-$$
-\begin{pmatrix}x \\v\end{pmatrix} \mapsto \begin{pmatrix}x + \Delta t \beta_i \frac{\partial K}{\partial v} (v)\\v\end{pmatrix}
-$$
-and $\exp(\beta_i \Delta t D_K)$ gives 
-$$
-\begin{pmatrix}x \\v\end{pmatrix} \mapsto \begin{pmatrix}x \\v - \Delta t \beta_i \frac{\partial E}{\partial x} (x)\end{pmatrix}.
-$$ 
+1. This algorithm in operator notation has quite a simple coordinate representation. Since $D_K^2 z = \{\{z,K\}K\} = \{(\dot  x, 0), K  \} = (0,0)$, the taylor expansion of $\exp (a D_K) $ reduces to $\Sigma_{n=0}^{\infty} \frac{(a D_K)^n}{n!} = 1+ aD_K$. This in turn makes $\exp(\beta_i \Delta t D_K)$ the mapping $$ \begin{pmatrix}x \\v\end{pmatrix} \mapsto \begin{pmatrix}x + \Delta t \beta_i \frac{\partial K}{\partial v} (v)\\v\end{pmatrix} $$
+and $\exp(\beta_i \Delta t D_K)$ gives $$ \begin{pmatrix}x \\v\end{pmatrix} \mapsto \begin{pmatrix}x \\v - \Delta t \beta_i \frac{\partial E}{\partial x} (x)\end{pmatrix}. $$ 
 2. Just use the definition from above $\Vert(x^\star,v^\star)-(x_{t},v_{t}) \Vert\leq C \cdot t^n$, plug in the definitions for $(x^\star,v^\star)$, $(x_{t},v_{t})$ and the series definition of the exponential function. Then, when multiplying the series, it is sufficient to consider only the summands that multiply up to an $t$-order of one and you should be able to find a $C$ such that $\Vert(x^\star,v^\star)-(x_{t},v_{t}) \Vert\leq C \cdot t$. Bear in mind that operators in general do not commute.
 3. One interesting remark is that, for symmetric approximations, $U(t)U(-t) = 1$, the error terms cannot be of even order since then, intuitively speaking, the error would point in the same direction, because $t^{2n} = (-t)^{2n}$. $U(t)$ is the time evolution operator and since we only consider time independent systems, $U(t)$ is symmetric in time, leaving no error behind when the product $U(t)U(-t)$ is applied.
-4. Here's how the second derivative comes into play: The Baker-Campbell-Hausdorff formula is a representation of solution $Z$ to the equation $e^Xe^Y=e^Z$ in terms of a series. The first terms of this series are: 
-$$
-Z = X+Y + \frac{1}{2}[X,Y]+\frac{1}{12}[X,[X,Y]]-\frac{1}{12}[Y,[X,Y]]+\cdots,
-$$ 
-where "$\cdots$" indicates terms involving higher commutators. Remember now that the operators in our case involve the Poisson bracket, which is a differential operator. Then, nesting the Poisson bracket implies the usage of higher (in our case, second) order derivatives.
-
-
-<!--
-#### But wait!
-
-I dont want to loose any of you right on the spot, just because I used the term differential equation. It is actually much simpler than that, so don't worry. Just let me show you one simple remarkable result.
-
-In our case of the seperable Hamiltonian, we can rewrite the differential equations, by just using the terms, that are actually dependend on the variable, we want to take the derivativ of, so
-$$\frac{dx}{dt} = \frac{\partial}{\partial v} K(v) = \frac{v}{m}, \hspace{15pt} \frac{dv}{dt}= -\frac{\partial}{\partial x} E(x).$$
-
-This might look already much more familiar to you. Just multiply the left equation with m and take once more the derivate with respect to $t$ gives us $m\frac{d^2x}{dt^2}  = \frac{dv}{dt}.$ This then plugt into the second equation 
-$$m\frac{d^2x}{dt^2}  = \frac{dv}{dt} = -\frac{\partial}{\partial x} E(x) = F$$
-leaves us with Newton's beautiful second law of motion.
-
--->
+4. Here's how the second derivative comes into play: The Baker-Campbell-Hausdorff formula is a representation of solution $Z$ to the equation $e^Xe^Y=e^Z$ in terms of a series. The first terms of this series are: $$ Z = X+Y + frac{1}{2}[X,Y]+\frac{1}{12}[X,[X,Y]]-\frac{1}{12}[Y,[X,Y]]+\cdots, $$ where "$\cdots$" indicates terms involving higher commutators. Remember now that the operators in our case involve the Poisson bracket, which is a differential operator. Then, nesting the Poisson bracket implies the usage of higher (in our case, second) order derivatives.
