@@ -4,8 +4,8 @@ jupyter:
     text_representation:
       extension: .md
       format_name: markdown
-      format_version: '1.3'
-      jupytext_version: 1.11.2
+      format_version: '1.2'
+      jupytext_version: 1.7.1
   kernelspec:
     display_name: Python 3
     language: python
@@ -107,14 +107,14 @@ If we further divide our time $t$ into $t =  \text{time_step} \cdot   \text{traj
 ```python
 def integrate(x, v):
 
-    v += 1./2 * time_step * -gradient_pot_energy(x)
+    v += 1 / 2 * time_step * -gradient_pot_energy(x)
 
-    for i in range(trajectory_length-1):
+    for i in range(trajectory_length - 1):
         x += time_step * v
         v += time_step * gradient_pot_energy(x)
 
     x += time_step * v
-    v += 1./2 * time_step * gradient_pot_energy(x)
+    v += 1 / 2 * time_step * gradient_pot_energy(x)
 
     return x, v
 ```
@@ -160,22 +160,22 @@ A Python implementation of the algorithm described above would look like this:
 ```python
 def integrate(x, v):
 
-    v += 1./6 * time_step * gradient_pot_energy(x)
+    v += 1 / 6 * time_step * gradient_pot_energy(x)
 
-    for i in range(trajectory_length-1):
-        x += 1./2 * v * time_step
-        v += (2./3 * time_step * (gradient_pot_energy(x)
-            + time_step**2./24
+    for i in range(trajectory_length - 1):
+        x += 1 / 2 * v * time_step
+        v += (2 / 3 * time_step * (gradient_pot_energy(x)
+            + time_step ** 2 / 24
             * np.matmul(hessian_log_prog(x),gradient_pot_energy(x))))
-        x += 1./2 * v * time_step
-        v += 1./3 * time_step * gradient_pot_energy(x)
+        x += 1 / 2 * v * time_step
+        v += 1 / 3 * time_step * gradient_pot_energy(x)
 
-    x += 1./2 * v * time_step
-    v += (2./3 * time_step * (gradient_pot_energy(x)
-        + time_step**2./24
+    x += 1 / 2 * v * time_step
+    v += (2 / 3 * time_step * (gradient_pot_energy(x)
+        + time_step ** 2 / 24
         * np.matmul(hessian_log_prog(x),gradient_pot_energy(x))))
-    x += 1./2 * v * time_step
-    v += 1./6 * time_step * gradient_pot_energy(x)
+    x += 1 / 2 * v * time_step
+    v += 1 / 6 * time_step * gradient_pot_energy(x)
 
     return x, v
 ```
@@ -236,11 +236,14 @@ Given that, based on the ESS estimation, we can achieve much more than twice the
 
 
 ## Conclusion
-I hope, that you have gained a deeper understanding of the numerics behind Hamiltonian mechanics. Certainly, this is still an current field of research and especially its applications outside physics are just beeing explored. So we can expect future results on different integrator sheems. To put it in a nutshell, we have seen that HMC does not need to rely only on the Leapfrog and may even be better of with the $U_7$.
+I hope that you have gained a deeper understanding of the numerics behind Hamiltonian mechanics and that this blog post stimulated you to think more about alternative integration schemes for HMC.
+Symplectic integration is still an active field of research and especially its applications outside physics are just being explored - we surely can expect more cool results on different integration schemes in the future!  
+
+Put it in a nutshell, we have seen that HMC does not necessarily rely on the leapfrog integrator and may even be better off with higher-order integration schemes such as $U_7$.
 
 
 ## Footnotes
-1. This algorithm in operator notation has quite a simple coordinate representation. Since $D_K^2 z = \{\{z,K\}K\} = \{(\dot  x, 0), K  \} = (0,0)$, the taylor expansion of $\exp (a D_K) $ reduces to $\Sigma_{n=0}^{\infty} \frac{(a D_K)^n}{n!} = 1+ aD_K$. This in turn makes $\exp(\beta_i \Delta t D_K)$ the mapping $$ \begin{pmatrix}x \\v\end{pmatrix} \mapsto \begin{pmatrix}x + \Delta t \beta_i \frac{\partial K}{\partial v} (v)\\v\end{pmatrix} $$
+1. This algorithm in operator notation has quite a simple coordinate representation. Since $D_K^2 z = \{\{z,K\}, K\} = \{(\dot  x, 0), K  \} = (0,0)$, the taylor expansion of $\exp (a D_K) $ reduces to $\Sigma_{n=0}^{\infty} \frac{(a D_K)^n}{n!} = 1+ aD_K$. This in turn makes $\exp(\beta_i \Delta t D_K)$ the mapping $$ \begin{pmatrix}x \\v\end{pmatrix} \mapsto \begin{pmatrix}x + \Delta t \beta_i \frac{\partial K}{\partial v} (v)\\v\end{pmatrix} $$
 and $\exp(\beta_i \Delta t D_K)$ gives $$ \begin{pmatrix}x \\v\end{pmatrix} \mapsto \begin{pmatrix}x \\v - \Delta t \beta_i \frac{\partial E}{\partial x} (x)\end{pmatrix}. $$ 
 2. Just use the definition from above $\Vert(x^\star,v^\star)-(x_{t},v_{t}) \Vert\leq C \cdot t^n$, plug in the definitions for $(x^\star,v^\star)$, $(x_{t},v_{t})$ and the series definition of the exponential function. Then, when multiplying the series, it is sufficient to consider only the summands that multiply up to an $t$-order of one and you should be able to find a $C$ such that $\Vert(x^\star,v^\star)-(x_{t},v_{t}) \Vert\leq C \cdot t$. Bear in mind that operators in general do not commute.
 3. One interesting remark is that, for symmetric approximations, $U(t)U(-t) = 1$, the error terms cannot be of even order since then, intuitively speaking, the error would point in the same direction, because $t^{2n} = (-t)^{2n}$. $U(t)$ is the time evolution operator and since we only consider time independent systems, $U(t)$ is symmetric in time, leaving no error behind when the product $U(t)U(-t)$ is applied.
