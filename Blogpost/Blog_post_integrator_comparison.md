@@ -65,7 +65,7 @@ A very general idea way of deriving symplectic integrator of arbitrary order are
 
 In 1995 [Suzuki](http://people.ucalgary.ca/~dfeder/535/suzuki.pdf) proposed a new way to approximate expressions such as the formal solution of Hamilton's equations,
 $$
-\exp ( t(D_K + D_E)) = \prod_{i=1}^{k/2} \exp (c_i t D_K) \exp (d_i t D_E) + \cal{O}(t^{k+1}),
+\exp ( t(D_K + D_E)) = \prod_{i=1}^{k/2} \exp (c_i t D_K) \exp (d_i t D_E) + \mathcal{O}(t^{k+1}),
 $$
 where $\Sigma_{i=1}^k c_i = \Sigma_{i=1}^k d_i =1$.
 You can think of this formula as a generalization of the identity $e^{m+n} = e ^m \cdot e^n$.
@@ -102,7 +102,7 @@ U_3 = \exp \left(\frac {1}{2}\Delta t D_E\right)\exp (\Delta t D_K)\exp \left(\f
 $$
 The coefficients are $c_1 = 0,\, c_2 = 1,\, d_1=d_2 = \frac{1}{2}.$
 
-If we further divide our time $t$ into $t =  \text{time_step} \cdot   \text{trajectory_length}$ and apply the Suzuki approximation $U_3$ $\text{trajectory_length}$-many times, then a small function, approximating the desired behaviour for some time $t$, would have the following form:
+If we further divide our time $t$ into $t =  \text{time\ step} \cdot   \text{trajectory\ length}$ and apply the Suzuki approximation $U_3$ $\text{trajectory\ length}$-many times, then a small function, approximating the desired behaviour for some time $t$, would have the following form:
 
 ```python
 def integrate(x, v):
@@ -146,7 +146,7 @@ Because the Chau *et al.* paper is focused on quantum mechanical applications, w
 When we want to apply $e ^A \cdot e^B \cdot e^C= e^{A+B+C}$ to operators, we remember that we must take into account that they do not commute.
 This identity thus does not hold in the general case, but we can use a series expansion, which, similar to a Taylor expansion, involves higher order derivatives.
 This is the approach taken in Chin's paper.
-Then, cutting off the expansion leaves us with an additional error, but even though we were able to reduce the number of factors, the approximation contains an error of order $\cal{O}(\Delta t^5)$.
+Then, cutting off the expansion leaves us with an additional error, but even though we were able to reduce the number of factors, the approximation contains an error of order $\mathcal{O}(\Delta t^5)$.
 Consequently, the $U_7$ remains exact up to fourth order and is therefore said to be a fourth-order approximation.
 
 Whichever way the $U_7$ is derived, the newly formed term involes the second order derivative and the final $U_7$ factorization is given by
