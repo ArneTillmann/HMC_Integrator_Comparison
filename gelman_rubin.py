@@ -62,9 +62,9 @@ def improved_estimator_PSRF(b, a, m, n, p, chains):
 
     t_hat = replicated_lugsail_batch_mean_sestimator(b, a, m, p, chains)
     sigma_hat = average_of_the_m_sample_covariances(m, n, p, chains)
-    nom = (np.linalg.det(t_hat) / np.linalg.det(sigma_hat)) ** (1. / p)
-
-    return np.sqrt((n - 1.0) / n + nom / n)
+    return (np.sqrt((n-1.)/n
+           + (np.linalg.det(t_hat)
+           / np.linalg.det(sigma_hat)) ** (1. / p) / n))
 
 
 def average_of_the_m_sample_covariances(m, n, p, chains):

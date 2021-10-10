@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import copy
 
 
+
 class HMC:
 
     def __init__(self, log_prob, gradient_log_prob,
@@ -40,14 +41,14 @@ class HMC:
         chain = [x_0]
 
         for i in range(chain_length):
-            state, accept = self.sample(chain[len(chain)-1])
+            state, accept, simulationx, simulationv = self.sample(chain[len(chain)-1])
             state = np.array(state)
             chain = np.append(chain, [state], axis=0)
             n_accepted += accept
 
         acceptance_rate = n_accepted/float(chain_length)
 
-        return chain, acceptance_rate
+        return chain, acceptance_rate, simulationx, simulationv
 
 
     def log_p_acc(self, x_old, v_old, x_new, v_new):
@@ -55,20 +56,25 @@ class HMC:
         def H(x,v):
             return -self.log_prob(x) + 0.5*np.sum(v**2)
 
-        return min(0, -(H(x_new, v_new) - H(x_old, v_old)))
+        r = min(0, -(H(x_new, v_new) - H(x_old, v_old)))
+        #pdb.set_trace()
+        return r
 
 
     def sample(self, x_old):
 
         v_old = np.random.normal(size=len(x_old))
-        x_new, v_new = self.integrate(copy.copy(x_old), copy.copy(v_old))
-        accept = (np.log(np.random.random())
+        x_new, v_new, simulationx, simulationv = self.integrate(copy.copy(x_old), copy.copy(v_old))
+        #print(x_new)
+        a = np.log(np.random.random())
+        #pdb.set_trace()
+        accept = (a
                  < self.log_p_acc(x_old, v_old, x_new, v_new))
 
         if accept:
-            return x_new, accept
+            return x_new, accept, simulationx, simulationv
         else:
-            return x_old, accept
+            return x_old, accept, simulationx, simulationv
 
 
     def integrate(self, x, v):
@@ -103,28 +109,35 @@ class U7HMC(HMC):
         Hamiltonian dynamics. For further information see
         https://arxiv.org/pdf/2007.05308.pdf.
         """
-
+        simulationv = np.array[v]
+        simulationx = np.array[x]
         v += 1./6 * self.stepsize * self.gradient_log_prob(x)
+        simulationv = np.append(simulationv, [np.array[v]], axis = 0)
 
         for i in range(self.trajectory_length-1):
             x += 1./2 * v * self.stepsize
-            tmp_grad = self.gradient_log_prob(x)
-            v += (2./3 * self.stepsize * (tmp_grad
+            simulationx = np.append(simulationx, [np.array[x]], axis = 0)
+            v += (2./3 * self.stepsize * (self.gradient_log_prob(x)
                 + self.stepsize**2/24
-                * np.matmul(self.hessian_log_prog(x),tmp_grad)))
+                * np.matmul(self.hessian_log_prog(x),self.gradient_log_prob(x))))
+            simulationv = np.append(simulationv, [np.array[v]], axis = 0)
 
             x += 1./2 * v * self.stepsize
+            simulationx = np.append(simulationx, [np.array[x]], axis = 0)
             v += 1./3 * self.stepsize * self.gradient_log_prob(x)
-
+            simulationv = np.append(simulationv, [np.array[v]], axis = 0)
         x += 1./2 * v * self.stepsize
-        tmp_grad = self.gradient_log_prob(x)
-        v += (2./3 * self.stepsize * (tmp_grad
+        simulationx = np.append(simulationx, [np.array[x]], axis = 0)
+        v += (2./3 * self.stepsize * (self.gradient_log_prob(x)
             + self.stepsize**2./24
-            * np.matmul(self.hessian_log_prog(x),tmp_grad)))
+            * np.matmul(self.hessian_log_prog(x),self.gradient_log_prob(x))))
+        simulationv = np.append(simulationv, [np.array[v]], axis = 0)
         x += 1./2 * v * self.stepsize
+        simulationx = np.append(simulationx, [np.array[x]], axis = 0)
         v += 1./6 * self.stepsize * self.gradient_log_prob(x)
+        simulationv = np.append(simulationv, [np.array[v]], axis = 0)
 
-        return x, v
+        return x, v, simulationx, simulationv
 
 
 class LeapfrogHMC(HMC):
@@ -133,14 +146,20 @@ class LeapfrogHMC(HMC):
         """The second integrator to which we compare the new u7 is the classical
         Leapfrog.
         """
+        simulationv = np.array[v]
+        simulationx = np.array[x]
 
         v += 1./2 * self.stepsize * self.gradient_log_prob(x)
-
+        simulationv = np.append(simulationv, [np.array[v]], axis = 0)
         for i in range(self.trajectory_length-1):
             x += self.stepsize * v
+            simulationx = np.append(simulationx, [np.array[x]], axis = 0)
             v += self.stepsize * self.gradient_log_prob(x)
+            simulationv = np.append(simulationv, [np.array[v]], axis = 0)
 
         x += self.stepsize * v
+        simulationx = np.append(simulationx, [np.array[x]], axis = 0)
         v += 1./2 * self.stepsize * self.gradient_log_prob(x)
+        simulationv = np.append(simulationv, [np.array[v]], axis = 0)
 
-        return x, v
+        return x, v, simulationx, simulationv
