@@ -34,6 +34,7 @@ def gradient_log_prob(x):
     return (-inv_cov@(x-mu))
 
 
+
 def hessian_log_prog(x):
 
     return -inv_cov
@@ -65,7 +66,6 @@ chainu7_HMCs = np.array(chainu7_HMCs)
 
 """Leapfrog"""
 
-
 Leapfrog_HMCs = [LeapfrogHMC(log_prob, gradient_log_prob, stepsize_leap,
                              trajectory_length_leap)
                              for _ in range(number_of_chains)]
@@ -80,6 +80,7 @@ for sampler in Leapfrog_HMCs:
 
 chainleapfrog_HMCs = np.array(chainleapfrog_HMCs)
 
+print(chainleapfrog_HMCs.shape)
 
 """Evaluation of the inte by using the revised Gelman-Rubin Diagnostic
 see https://arxiv.org/pdf/1812.09384.pdf for further notice"""
@@ -87,7 +88,6 @@ see https://arxiv.org/pdf/1812.09384.pdf for further notice"""
 
 b = int(np.floor(chain_length ** (1.0 / 3)))
 a = int(np.floor(chain_length / b))
-
 print("U7 acceptance_rate :" + str(acceptance_rate_list_u7))
 print("Leapfrog acceptance_rate:" + str(acceptance_rate_list_Leapfrog))
 
@@ -100,3 +100,4 @@ print("Leapfrog acceptance_rate:" + str(acceptance_rate_list_Leapfrog))
 #                                            dimension, chainu7_HMCs)))
 # print("Leapfrog gelman_rubin statistic :" + str(gelman_rubin.improved_estimator_PSRF(b, a, number_of_chains, chain_length,
 #                                            dimension, chainleapfrog_HMCs)))
+

@@ -121,6 +121,7 @@ class U7HMC(HMC):
                 + self.stepsize**2/24
                 * np.matmul(self.hessian_log_prog(x),self.gradient_log_prob(x))))
             simulationv = np.append(simulationv, [np.array[v]], axis = 0)
+
             x += 1./2 * v * self.stepsize
             simulationx = np.append(simulationx, [np.array[x]], axis = 0)
             v += 1./3 * self.stepsize * self.gradient_log_prob(x)
