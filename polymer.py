@@ -16,6 +16,7 @@ sigma_squared=0.01
 sigma_squared_likelihood=0.2
 
 
+
 def log_prior(x):
     x = x.reshape(-1, 3)
     chain_log_prob = np.sum(-(np.sqrt(np.sum((x[1:]-x[:-1])**2, axis=1))-mu_prior)**2/(2*sigma_squared))
@@ -25,9 +26,11 @@ def log_prior(x):
     volume_exclusion_log_prob = -np.sum((dm2 - mu_prior * mu_prior)**2 / (2 * sigma_squared))
     return chain_log_prob + volume_exclusion_log_prob
 
+
 pairs = np.array([[0, 49],
                   [12, 37]])
 distances = np.array([mu_prior, mu_prior])
+
 
 def log_likelihood(x):
     # mu = np.linalg.norm(x[None,:] - x[:, None], axis=2)
@@ -44,13 +47,16 @@ gradient_log_posterior = grad(log_posterior)
 hessian_log_posterior = jacobian(gradient_log_posterior)
 
 
+
 number_of_monomere=50
+
 
 pair_combinations = np.array(list(combinations(range(number_of_monomere), 2)))
 inds_x = pair_combinations[:, 0]
 inds_y = pair_combinations[:, 1]
 
 x=np.abs(np.random.normal(0,5,(number_of_monomere,3))).ravel()
+
 
 # b = int(np.floor(chain_length ** (1.0 / 3)))
 # a = int(np.floor(chain_length / b))
@@ -64,17 +70,16 @@ def plot_hist_all_dist(chain):
 
 def plot_hist_data(chain, pair):
     dist = np.linalg.norm(chain[:,pairs[pair,0]]-chain[:,pairs[pair,1]], axis = 1)
-    # print(dist)
-    plt.hist(dist, bins = 100)
-    plt.show()
 
 
 
 if __name__ == "__main__":
+
     chain_length = 500
     time = 10
     trajectory_length = 10
     stepsize = 0.005
+
     leapfrog = LeapfrogHMC(log_posterior, gradient_log_posterior, stepsize, trajectory_length)
     chain_leapfrog , acceptancerate = leapfrog.build_chain(x, chain_length)
     print(acceptancerate)

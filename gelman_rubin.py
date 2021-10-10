@@ -8,19 +8,19 @@ import numpy as np
 def k_th_batch_mean(k, b, chains):
     """calculation of a special mean for each chain respectively"""
 
-    return (1.0/b) * chains[int((k-1)*b+1):int(k*b),:].sum(axis=0)
+    return (1.0/b) * chains[int((k - 1) * b + 1):int(k * b),:].sum(axis=0)
 
 
-def combined_estimator_of_mu(m, chains):
+def combined_estimator_of_mu(chains):
     """The mean of means for different chains"""
 
-    return 1.0/m * (chains.mean(axis=1)).sum(axis=0)
+    return np.mean(chains.mean(axis=1), axis=0)
 
 
 def replicated_batch_means_estimator(b, a, m, p, chains):
     """intermediate step for the following calculation"""
 
-    mu = combined_estimator_of_mu(m, chains)
+    mu = combined_estimator_of_mu(chains)
     x = np.zeros((p,p))
 
     for i in range(m):
@@ -28,14 +28,17 @@ def replicated_batch_means_estimator(b, a, m, p, chains):
             k_th_batch_m = k_th_batch_mean(k, b, chains[i])
             x += np.outer((k_th_batch_m - mu),(k_th_batch_m - mu))
 
-    return (b/(a*m-1)) * x
+    return (b / (a * m - 1)) * x
 
 
 def replicated_lugsail_batch_mean_sestimator(b, a, m, p, chains):
     """see equation (9) in the paper named at the beginning"""
 
-    return (2 * replicated_batch_means_estimator(float(b), a, m, p, chains)
-           - replicated_batch_means_estimator(np.floor(b/3), a, m, p, chains))
+    T_hat_b = replicated_batch_means_estimator(float(b), a, m, p, chains)
+    T_hat_b_3 = replicated_batch_means_estimator(np.floor(b/3), a, m, p,
+                                                 chains)
+
+    return 2 * T_hat_b - T_hat_b_3
 
 
 #def biased_from_above_estimator(b, a, m, n, chains):
@@ -59,21 +62,14 @@ def improved_estimator_PSRF(b, a, m, n, p, chains):
 
     t_hat = replicated_lugsail_batch_mean_sestimator(b, a, m, p, chains)
     sigma_hat = average_of_the_m_sample_covariances(m, n, p, chains)
+    nom = (np.linalg.det(t_hat) / np.linalg.det(sigma_hat)) ** (1. / p)
 
-    return (np.sqrt((n-1.)/n
-           + (np.linalg.det(t_hat)
-           / np.linalg.det(sigma_hat)) ** (1. / p) / n))
+    return np.sqrt((n - 1.0) / n + nom / n)
 
 
 def average_of_the_m_sample_covariances(m, n, p, chains):
     """Auxiliary function"""
-
-    x = np.zeros((p,p))
-
-    for i in range(m):
-        x += np.cov(chains[i].T, ddof=1)
-
-    return 1./m * x
+    return np.mean([np.cov(chain.T, ddof=1) for chain in chains], 0)
 
 
 def old_gr(m , n, p, chains):
