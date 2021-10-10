@@ -75,7 +75,6 @@ def average_of_the_m_sample_covariances(m, n, p, chains):
 
     return 1./m * x
 
-
 def old_gr(m , n, p, chains):
     n = chains.shape[1]
     S = average_of_the_m_sample_covariances(m, n, p, chains)
@@ -83,3 +82,4 @@ def old_gr(m , n, p, chains):
     B = n / (chains.shape[0] - 1) * np.sum([(chain.mean(0) - mu_hat).reshape(-1, 1) @ (chain.mean(0) - mu_hat).reshape(1, -1) for chain in chains], 0)
     lambda_max = np.linalg.eig(np.linalg.inv(S) @ B)[0].max().real
     return np.sqrt((n - 1) / n + lambda_max / n)
+

@@ -112,6 +112,7 @@ class U7HMC(HMC):
             v += (2./3 * self.stepsize * (tmp_grad
                 + self.stepsize**2/24
                 * np.matmul(self.hessian_log_prog(x),tmp_grad)))
+
             x += 1./2 * v * self.stepsize
             v += 1./3 * self.stepsize * self.gradient_log_prob(x)
 
